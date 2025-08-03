@@ -8,7 +8,7 @@ import { ServiceWorkerRegistrar } from "@/components/service-worker-registrar";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "FinTrack Lite",
+  title: "Paisa View",
   description: "A comprehensive budgeting and expense tracking app for personal finance management.",
   manifest: "/manifest.json",
 };
