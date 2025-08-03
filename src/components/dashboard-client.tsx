@@ -46,6 +46,49 @@ export function DashboardClient() {
     toast({ title: "Budget Updated", description: "Your monthly budget has been set." });
   };
 
+  const handleExportData = () => {
+    const dataToExport = {
+      expenses,
+      income,
+      budget,
+    };
+    const dataStr = JSON.stringify(dataToExport, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `paisa-view-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({ title: "Data Exported", description: "Your data has been successfully exported." });
+  };
+
+  const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const result = e.target?.result as string;
+          const importedData = JSON.parse(result);
+          if (importedData.expenses && importedData.income && importedData.budget) {
+            setExpenses(importedData.expenses);
+            setIncome(importedData.income);
+            setBudget(importedData.budget);
+            toast({ title: "Data Imported", description: "Your data has been successfully imported." });
+          } else {
+            toast({ variant: "destructive", title: "Invalid File", description: "The selected file has an invalid format." });
+          }
+        } catch (error) {
+          toast({ variant: "destructive", title: "Import Failed", description: "There was an error importing your data." });
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
   const { totalIncome, totalExpenses, savings } = useMemo(() => {
     const totalIncome = income.reduce((sum, item) => sum + item.amount, 0);
     const totalExpenses = expenses.reduce((sum, item) => sum + item.amount, 0);
@@ -57,7 +100,11 @@ export function DashboardClient() {
   return (
     <>
       <div className="flex-1 flex flex-col bg-background">
-        <DashboardHeader onSetBudget={() => setSetBudgetOpen(true)} />
+        <DashboardHeader
+          onSetBudget={() => setSetBudgetOpen(true)}
+          onExport={handleExportData}
+          onImport={handleImportData}
+        />
         <main className="flex-1 overflow-y-auto pb-28">
           <SummaryCards
             isClient={isClient}
