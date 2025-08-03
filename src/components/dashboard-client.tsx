@@ -9,7 +9,7 @@ import { AddIncomeDialog } from "./dialogs/add-income-dialog";
 import { SetBudgetDialog } from "./dialogs/set-budget-dialog";
 import { DashboardHeader } from "./dashboard-header";
 import { SummaryCards } from "./summary-cards";
-import { BudgetChart } from "./budget-chart";
+import { ExpensePieChart } from "./expense-pie-chart";
 import { RecentTransactions } from "./recent-transactions";
 import { AiAssistant } from "./ai-assistant";
 import { useToast } from "@/hooks/use-toast";
@@ -66,7 +66,7 @@ export function DashboardClient() {
             savings={savings}
           />
           <div className="grid gap-4 md:gap-6 p-4 md:p-6 grid-cols-1 lg:grid-cols-3">
-            <BudgetChart totalExpenses={totalExpenses} budget={budget.amount} />
+            <ExpensePieChart isClient={isClient} expenses={expenses} />
             <AiAssistant expenses={expenses} income={income} />
             <RecentTransactions isClient={isClient} expenses={expenses} income={income} />
           </div>
