@@ -21,20 +21,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { CATEGORIES } from "@/lib/constants";
 import type { Expense } from "@/lib/types";
 
 const formSchema = z.object({
   description: z.string().min(1, "Description is required"),
   amount: z.coerce.number().min(0.01, "Amount must be positive"),
-  category: z.enum(CATEGORIES),
+  category: z.string().min(1, "Category is required"),
   date: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: "Invalid date",
   }),
@@ -52,7 +44,7 @@ export function AddExpenseDialog({ isOpen, onClose, onAddExpense }: AddExpenseDi
     defaultValues: {
       description: "",
       amount: 0,
-      category: "Food",
+      category: "",
       date: new Date().toISOString().split("T")[0],
     },
   });
@@ -106,20 +98,9 @@ export function AddExpenseDialog({ isOpen, onClose, onAddExpense }: AddExpenseDi
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a category" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {CATEGORIES.map((cat) => (
-                        <SelectItem key={cat} value={cat}>
-                          {cat}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                   <FormControl>
+                    <Input placeholder="e.g., Food" {...field} />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}

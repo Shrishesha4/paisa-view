@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { Expense, Income } from "@/lib/types";
-import { CATEGORY_ICONS } from "@/lib/constants";
+import { getCategoryIcon } from "@/lib/constants";
 import { ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
@@ -22,9 +22,9 @@ export function RecentTransactions({ expenses, income }: RecentTransactionsProps
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-IN", {
       style: "currency",
-      currency: "USD",
+      currency: "INR",
     }).format(amount);
   };
   
@@ -54,7 +54,7 @@ export function RecentTransactions({ expenses, income }: RecentTransactionsProps
             </TableHeader>
             <TableBody>
               {transactions.map((transaction) => {
-                const Icon = CATEGORY_ICONS[transaction.category];
+                const Icon = getCategoryIcon(transaction.category);
                 return (
                   <TableRow key={transaction.id}>
                     <TableCell>

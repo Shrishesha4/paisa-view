@@ -1,12 +1,4 @@
-export type Category = 
-  | 'Food' 
-  | 'Transport' 
-  | 'Utilities' 
-  | 'Rent' 
-  | 'Entertainment' 
-  | 'Health' 
-  | 'Shopping' 
-  | 'Other';
+export type Category = string;
 
 export const incomeCategory = 'Income';
 export type IncomeCategory = typeof incomeCategory;
@@ -27,6 +19,5 @@ export interface Income extends Transaction {
 }
 
 export interface Budget {
-  category: Category;
   amount: number;
 }

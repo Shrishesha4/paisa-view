@@ -10,22 +10,14 @@ import {
   PlusCircle,
   Landmark,
   type LucideIcon,
+  CircleDollarSign,
 } from 'lucide-react';
-
-export const CATEGORIES: Category[] = [
-  'Food',
-  'Transport',
-  'Utilities',
-  'Rent',
-  'Entertainment',
-  'Health',
-  'Shopping',
-  'Other',
-];
 
 export const INCOME_CATEGORY: IncomeCategory = 'Income';
 
-export const CATEGORY_ICONS: Record<Category | IncomeCategory, LucideIcon> = {
+const DEFAULT_CATEGORY_ICON = CircleDollarSign;
+
+const PREDEFINED_ICONS: Record<string, LucideIcon> = {
   Food: UtensilsCrossed,
   Transport: Car,
   Utilities: Bolt,
@@ -36,3 +28,7 @@ export const CATEGORY_ICONS: Record<Category | IncomeCategory, LucideIcon> = {
   Other: PlusCircle,
   Income: Landmark,
 };
+
+export const getCategoryIcon = (category: Category | IncomeCategory): LucideIcon => {
+    return PREDEFINED_ICONS[category] || DEFAULT_CATEGORY_ICON;
+}

@@ -5,45 +5,46 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 
 type BudgetChartProps = {
   data: {
-    category: string;
-    budget: number;
-    spent: number;
+    name: string;
+    value: number;
   }[];
+  totalBudget: number;
 };
 
-export function BudgetChart({ data }: BudgetChartProps) {
+export function BudgetChart({ data, totalBudget }: BudgetChartProps) {
+    const totalSpent = data.reduce((sum, item) => sum + item.value, 0);
+
+    const chartData = [
+        { name: 'Spent', spent: totalSpent, budget: totalBudget - totalSpent }
+    ];
+
   return (
     <Card className="col-span-1 lg:col-span-2">
       <CardHeader>
         <CardTitle>Budget vs. Spending</CardTitle>
-        <CardDescription>A comparison of your monthly budget and expenses by category.</CardDescription>
+        <CardDescription>A comparison of your monthly budget and total expenses.</CardDescription>
       </CardHeader>
       <CardContent className="pl-2">
         <ResponsiveContainer width="100%" height={350}>
-          <BarChart data={data}>
-            <XAxis
-              dataKey="category"
-              stroke="hsl(var(--muted-foreground))"
-              fontSize={12}
-              tickLine={false}
-              axisLine={false}
-            />
-            <YAxis
-              stroke="hsl(var(--muted-foreground))"
-              fontSize={12}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(value) => `$${value}`}
-            />
+          <BarChart layout="vertical" data={chartData} stackOffset="expand">
+             <XAxis type="number" hide domain={[0, 100]} tickFormatter={(value) => `${value}%`}/>
+             <YAxis type="category" dataKey="name" hide/>
             <Tooltip
                 contentStyle={{
                     backgroundColor: "hsl(var(--background))",
                     borderColor: "hsl(var(--border))",
                 }}
+                formatter={(value, name, props) => {
+                    const total = props.payload.spent + props.payload.budget;
+                    const percentage = total > 0 ? (props.payload.spent / total) * 100 : 0;
+                    if(name === 'spent'){
+                         return [`${percentage.toFixed(0)}%`, "Spent"]
+                    }
+                    return null;
+                }}
             />
-            <Legend />
-            <Bar dataKey="budget" fill="hsl(var(--secondary-foreground))" radius={[4, 4, 0, 0]} name="Budget" />
-            <Bar dataKey="spent" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Spent" />
+            <Bar dataKey="spent" fill="hsl(var(--primary))" name="Spent" stackId="a"/>
+            <Bar dataKey="budget" fill="hsl(var(--secondary-foreground))" name="Remaining" stackId="a" />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

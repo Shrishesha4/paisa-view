@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import type { Expense, Income, Budget } from "@/lib/types";
-import { CATEGORIES, INCOME_CATEGORY } from "@/lib/constants";
+import { INCOME_CATEGORY } from "@/lib/constants";
 import { AddExpenseDialog } from "./dialogs/add-expense-dialog";
 import { AddIncomeDialog } from "./dialogs/add-income-dialog";
 import { SetBudgetDialog } from "./dialogs/set-budget-dialog";
@@ -18,7 +18,7 @@ export function DashboardClient() {
   const { toast } = useToast();
   const [expenses, setExpenses] = useLocalStorage<Expense[]>("expenses", []);
   const [income, setIncome] = useLocalStorage<Income[]>("income", []);
-  const [budgets, setBudgets] = useLocalStorage<Budget[]>("budgets", []);
+  const [budget, setBudget] = useLocalStorage<Budget>("budget", { amount: 0 });
   
   const [isAddExpenseOpen, setAddExpenseOpen] = useState(false);
   const [isAddIncomeOpen, setAddIncomeOpen] = useState(false);
@@ -34,12 +34,12 @@ export function DashboardClient() {
     toast({ title: "Income Added", description: "Your income has been successfully recorded." });
   };
 
-  const handleSetBudgets = (newBudgets: Budget[]) => {
-    setBudgets(newBudgets);
-    toast({ title: "Budgets Updated", description: "Your new budget goals have been saved." });
+  const handleSetBudget = (newBudget: Budget) => {
+    setBudget(newBudget);
+    toast({ title: "Budget Updated", description: "Your new budget goal has been saved." });
   };
 
-  const { totalIncome, totalExpenses, savings, budgetChartData } = useMemo(() => {
+  const { totalIncome, totalExpenses, savings, expenseChartData } = useMemo(() => {
     const totalIncome = income.reduce((sum, item) => sum + item.amount, 0);
     const totalExpenses = expenses.reduce((sum, item) => sum + item.amount, 0);
     const savings = totalIncome - totalExpenses;
@@ -49,18 +49,13 @@ export function DashboardClient() {
       return acc;
     }, {} as Record<string, number>);
 
-    const budgetChartData = CATEGORIES.map(category => {
-      const budgetAmount = budgets.find(b => b.category === category)?.amount || 0;
-      const spentAmount = expensesByCategory[category] || 0;
-      return {
-        category,
-        budget: budgetAmount,
-        spent: spentAmount,
-      };
-    }).filter(d => d.budget > 0 || d.spent > 0);
+    const expenseChartData = Object.entries(expensesByCategory).map(([category, amount]) => ({
+        name: category,
+        value: amount,
+    }));
 
-    return { totalIncome, totalExpenses, savings, budgetChartData };
-  }, [income, expenses, budgets]);
+    return { totalIncome, totalExpenses, savings, expenseChartData };
+  }, [income, expenses]);
 
   return (
     <>
@@ -77,7 +72,7 @@ export function DashboardClient() {
             savings={savings}
           />
           <div className="grid gap-4 md:gap-6 p-4 md:p-6 grid-cols-1 lg:grid-cols-3">
-            <BudgetChart data={budgetChartData} />
+            <BudgetChart data={expenseChartData} totalBudget={budget.amount} />
             <AiAssistant expenses={expenses} income={income} />
             <RecentTransactions expenses={expenses} income={income} />
           </div>
@@ -97,8 +92,8 @@ export function DashboardClient() {
       <SetBudgetDialog
         isOpen={isSetBudgetOpen}
         onClose={() => setSetBudgetOpen(false)}
-        onSetBudgets={handleSetBudgets}
-        currentBudgets={budgets}
+        onSetBudget={handleSetBudget}
+        currentBudget={budget}
       />
     </>
   );
