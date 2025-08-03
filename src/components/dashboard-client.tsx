@@ -26,8 +26,8 @@ export function DashboardClient() {
     toast({ title: "Expense Added", description: "Your expense has been successfully recorded." });
   };
 
-  const handleAddIncome = (newIncome: Omit<Income, "id" | "category">) => {
-    setIncome([...income, { ...newIncome, id: crypto.randomUUID(), category: INCOME_CATEGORY }]);
+  const handleAddIncome = (newIncome: Omit<Income, "id" | "category" | "date">) => {
+    setIncome([...income, { ...newIncome, id: crypto.randomUUID(), category: INCOME_CATEGORY, date: new Date().toISOString() }]);
     toast({ title: "Income Added", description: "Your income has been successfully recorded." });
   };
 

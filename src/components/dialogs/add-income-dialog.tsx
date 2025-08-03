@@ -22,20 +22,16 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import type { Income } from "@/lib/types";
-import { INCOME_CATEGORY } from "@/lib/constants";
 
 const formSchema = z.object({
   description: z.string().min(1, "Source is required"),
   amount: z.coerce.number().min(0.01, "Amount must be positive"),
-  date: z.string().refine((date) => !isNaN(Date.parse(date)), {
-    message: "Invalid date",
-  }),
 });
 
 type AddIncomeDialogProps = {
   isOpen: boolean;
   onClose: () => void;
-  onAddIncome: (income: Omit<Income, "id" | "category">) => void;
+  onAddIncome: (income: Omit<Income, "id" | "category" | "date">) => void;
 };
 
 export function AddIncomeDialog({ isOpen, onClose, onAddIncome }: AddIncomeDialogProps) {
@@ -44,7 +40,6 @@ export function AddIncomeDialog({ isOpen, onClose, onAddIncome }: AddIncomeDialo
     defaultValues: {
       description: "",
       amount: 0,
-      date: new Date().toISOString().split("T")[0],
     },
   });
 
@@ -60,7 +55,7 @@ export function AddIncomeDialog({ isOpen, onClose, onAddIncome }: AddIncomeDialo
         <DialogHeader>
           <DialogTitle>Add New Income</DialogTitle>
           <DialogDescription>
-            Enter the details of your income below.
+            Enter the details of your income below. The current date and time will be automatically recorded.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -72,7 +67,7 @@ export function AddIncomeDialog({ isOpen, onClose, onAddIncome }: AddIncomeDialo
                 <FormItem>
                   <FormLabel>Source</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Monthly Salary" {...field} />
+                    <Input placeholder="e.g., Pocket money from Dad" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -83,22 +78,9 @@ export function AddIncomeDialog({ isOpen, onClose, onAddIncome }: AddIncomeDialo
               name="amount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Amount</FormLabel>
+                  <FormLabel>Amount (INR)</FormLabel>
                   <FormControl>
                     <Input type="number" placeholder="0.00" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-             <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Date</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
