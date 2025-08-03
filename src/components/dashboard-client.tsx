@@ -15,7 +15,6 @@ import { RecentTransactions } from "./recent-transactions";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
-import { AiAssistant } from "./ai-assistant";
 
 export function DashboardClient() {
   const { toast } = useToast();
@@ -68,7 +67,6 @@ export function DashboardClient() {
           />
           <div className="grid gap-4 md:gap-6 p-4 md:p-6 grid-cols-1 lg:grid-cols-3">
             <ExpensePieChart isClient={isClient} expenses={expenses} />
-            <AiAssistant expenses={expenses} income={income} />
             <RecentTransactions isClient={isClient} expenses={expenses} income={income} />
           </div>
         </main>
