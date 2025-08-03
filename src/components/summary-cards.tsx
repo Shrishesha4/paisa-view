@@ -24,7 +24,7 @@ export function SummaryCards({ totalIncome, totalExpenses, savings }: SummaryCar
           <CardTitle className="text-sm font-medium">Total Income</CardTitle>
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <div className="text-2xl font-bold">{formatCurrency(totalIncome)}</div>
           <p className="text-xs text-muted-foreground">This month's earnings</p>
         </CardContent>
@@ -34,7 +34,7 @@ export function SummaryCards({ totalIncome, totalExpenses, savings }: SummaryCar
           <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
           <TrendingDown className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <div className="text-2xl font-bold">{formatCurrency(totalExpenses)}</div>
           <p className="text-xs text-muted-foreground">This month's spending</p>
         </CardContent>
@@ -44,7 +44,7 @@ export function SummaryCards({ totalIncome, totalExpenses, savings }: SummaryCar
           <CardTitle className="text-sm font-medium">Savings</CardTitle>
           <PiggyBank className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <div className={`text-2xl font-bold ${savings < 0 ? 'text-destructive' : 'text-primary'}`}>
             {formatCurrency(savings)}
           </div>

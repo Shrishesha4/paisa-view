@@ -59,7 +59,7 @@ export function DashboardClient() {
         </main>
       </div>
 
-       <div className="fixed bottom-0 left-0 right-0 z-10 p-4">
+       <div className="fixed bottom-0 left-0 right-0 z-10 p-4 md:hidden">
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent pointer-events-none"></div>
         <div className="relative flex justify-center items-center gap-2">
             <Button onClick={() => setAddExpenseOpen(true)} size="lg" className="shadow-lg"><PlusCircle className="mr-2 h-4 w-4" /> Expense</Button>
