@@ -80,7 +80,10 @@ export function HistoryClient() {
     }
     return (
       <Accordion type="single" collapsible className="w-full">
-        {Object.entries(groupedTransactions).map(([date, { transactions: dailyTransactions, totalCredit, totalDebit }], index) => (
+        {Object.entries(groupedTransactions).map(([date, { transactions: dailyTransactions, totalCredit, totalDebit }], index) => {
+           const netAmount = totalCredit - totalDebit;
+           const isSavings = netAmount >= 0;
+           return (
            <AccordionItem value={`item-${index}`} key={date}>
              <AccordionTrigger>
                <div className="flex justify-between w-full pr-4">
@@ -91,8 +94,10 @@ export function HistoryClient() {
                    </div>
                  </div>
                  <div className="text-right">
-                    <div className="font-semibold text-success">{formatCurrency(totalCredit)}</div>
-                    <div className="text-xs text-destructive">{formatCurrency(totalDebit)}</div>
+                    <div className={cn("font-semibold", isSavings ? 'text-success' : 'text-destructive')}>
+                        {isSavings ? '+' : ''}{formatCurrency(netAmount)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">{isSavings ? 'Saved' : 'Overspent'}</div>
                  </div>
                </div>
              </AccordionTrigger>
@@ -144,7 +149,8 @@ export function HistoryClient() {
               </Table>
              </AccordionContent>
            </AccordionItem>
-        ))}
+           )
+        })}
       </Accordion>
     );
   }
