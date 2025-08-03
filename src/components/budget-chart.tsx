@@ -4,24 +4,27 @@ import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recha
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 type BudgetChartProps = {
-  totalIncome: number;
   totalExpenses: number;
+  budget: number;
 };
 
-export function BudgetChart({ totalIncome, totalExpenses }: BudgetChartProps) {
+export function BudgetChart({ totalExpenses, budget }: BudgetChartProps) {
 
     const chartData = [
-        { name: 'Funds', spent: totalExpenses, remaining: Math.max(0, totalIncome - totalExpenses) }
+        { name: 'Funds', spent: totalExpenses, remaining: Math.max(0, budget - totalExpenses) }
     ];
 
-    const spentPercentage = totalIncome > 0 ? (totalExpenses / totalIncome) * 100 : 0;
+    const spentPercentage = budget > 0 ? (totalExpenses / budget) * 100 : 0;
 
   return (
     <Card className="col-span-1 lg:col-span-2">
       <CardHeader>
-        <CardTitle>Income vs. Spending</CardTitle>
+        <CardTitle>Budget vs. Spending</CardTitle>
         <CardDescription>
-            {`You've spent ${spentPercentage.toFixed(0)}% of your income.`}
+            {budget > 0 
+                ? `You've spent ${spentPercentage.toFixed(0)}% of your budget.`
+                : "Set a budget to track your spending."
+            }
         </CardDescription>
       </CardHeader>
       <CardContent className="pl-2">
@@ -35,6 +38,9 @@ export function BudgetChart({ totalIncome, totalExpenses }: BudgetChartProps) {
                     borderColor: "hsl(var(--border))",
                 }}
                 formatter={(value, name, props) => {
+                    if (budget === 0) {
+                        return [new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(value as number), "Spent"];
+                    }
                     const { spent, remaining } = props.payload;
                     const total = spent + remaining;
                     const formatCurrency = (amount: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(amount);
@@ -48,8 +54,8 @@ export function BudgetChart({ totalIncome, totalExpenses }: BudgetChartProps) {
                     return null;
                 }}
             />
-            <Bar dataKey="spent" fill="hsl(var(--primary))" name="spent" stackId="a"/>
-            <Bar dataKey="remaining" fill="hsl(var(--secondary))" name="remaining" stackId="a" />
+            <Bar dataKey="spent" fill="hsl(var(--primary))" name="spent" stackId="a" radius={budget === 0 || totalExpenses >= budget ? [4, 4, 4, 4] : [4, 0, 0, 4]}/>
+            <Bar dataKey="remaining" fill="hsl(var(--secondary))" name="remaining" stackId="a" radius={[0, 4, 4, 0]}/>
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

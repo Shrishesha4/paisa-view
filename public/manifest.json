@@ -1,23 +1,21 @@
 {
-  "name": "FinTrack Lite",
-  "short_name": "FinTrack",
-  "description": "A comprehensive budgeting and expense tracking app for personal finance management.",
-  "icons": [
-    {
-      "src": "/icons/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#E0E8EF",
-  "theme_color": "#6699CC"
+    "name": "FinTrack Lite",
+    "short_name": "FinTrack",
+    "description": "A comprehensive budgeting and expense tracking app for personal finance management.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#E0E8EF",
+    "theme_color": "#6699CC",
+    "icons": [
+        {
+            "src": "/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
 }

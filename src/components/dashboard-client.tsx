@@ -2,10 +2,11 @@
 
 import { useState, useMemo } from "react";
 import { useLocalStorage } from "@/hooks/use-local-storage";
-import type { Expense, Income } from "@/lib/types";
+import type { Expense, Income, Budget } from "@/lib/types";
 import { INCOME_CATEGORY } from "@/lib/constants";
 import { AddExpenseDialog } from "./dialogs/add-expense-dialog";
 import { AddIncomeDialog } from "./dialogs/add-income-dialog";
+import { SetBudgetDialog } from "./dialogs/set-budget-dialog";
 import { DashboardHeader } from "./dashboard-header";
 import { SummaryCards } from "./summary-cards";
 import { BudgetChart } from "./budget-chart";
@@ -19,9 +20,11 @@ export function DashboardClient() {
   const { toast } = useToast();
   const [expenses, setExpenses] = useLocalStorage<Expense[]>("expenses", []);
   const [income, setIncome] = useLocalStorage<Income[]>("income", []);
+  const [budget, setBudget] = useLocalStorage<Budget>("budget", { amount: 0 });
   
   const [isAddExpenseOpen, setAddExpenseOpen] = useState(false);
   const [isAddIncomeOpen, setAddIncomeOpen] = useState(false);
+  const [isSetBudgetOpen, setSetBudgetOpen] = useState(false);
 
   const handleAddExpense = (expense: Omit<Expense, "id">) => {
     setExpenses([...expenses, { ...expense, id: crypto.randomUUID(), date: new Date().toISOString() }]);
@@ -31,6 +34,11 @@ export function DashboardClient() {
   const handleAddIncome = (newIncome: Omit<Income, "id" | "category" | "date">) => {
     setIncome([...income, { ...newIncome, id: crypto.randomUUID(), category: INCOME_CATEGORY, date: new Date().toISOString() }]);
     toast({ title: "Income Added", description: "Your income has been successfully recorded." });
+  };
+
+  const handleSetBudget = (newBudget: Budget) => {
+    setBudget(newBudget);
+    toast({ title: "Budget Updated", description: "Your monthly budget has been set." });
   };
 
   const { totalIncome, totalExpenses, savings } = useMemo(() => {
@@ -44,7 +52,7 @@ export function DashboardClient() {
   return (
     <>
       <div className="flex-1 flex flex-col bg-background">
-        <DashboardHeader />
+        <DashboardHeader onSetBudget={() => setSetBudgetOpen(true)} />
         <main className="flex-1 overflow-y-auto pb-28">
           <SummaryCards
             totalIncome={totalIncome}
@@ -52,7 +60,7 @@ export function DashboardClient() {
             savings={savings}
           />
           <div className="grid gap-4 md:gap-6 p-4 md:p-6 grid-cols-1 lg:grid-cols-3">
-            <BudgetChart totalIncome={totalIncome} totalExpenses={totalExpenses} />
+            <BudgetChart totalExpenses={totalExpenses} budget={budget.amount} />
             <AiAssistant expenses={expenses} income={income} />
             <RecentTransactions expenses={expenses} income={income} />
           </div>
@@ -76,6 +84,12 @@ export function DashboardClient() {
         isOpen={isAddIncomeOpen}
         onClose={() => setAddIncomeOpen(false)}
         onAddIncome={handleAddIncome}
+      />
+       <SetBudgetDialog
+        isOpen={isSetBudgetOpen}
+        onClose={() => setSetBudgetOpen(false)}
+        onSetBudget={handleSetBudget}
+        currentBudget={budget}
       />
     </>
   );
