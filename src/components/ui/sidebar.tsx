@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import NextLink from "next/link"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
@@ -206,7 +207,7 @@ const Sidebar = React.forwardRef<
             }
             side={side}
           >
-            <SheetTitle className="sr-only">Sidebar</SheetTitle>
+            <SheetTitle>Sidebar</SheetTitle>
             <SheetDescription className="sr-only">Main navigation and sidebar content.</SheetDescription>
             <div className="flex h-full w-full flex-col">{children}</div>
           </SheetContent>
@@ -541,6 +542,7 @@ const SidebarMenuButton = React.forwardRef<
     asChild?: boolean
     isActive?: boolean
     tooltip?: string | React.ComponentProps<typeof TooltipContent>
+    href?: string
   } & VariantProps<typeof sidebarMenuButtonVariants>
 >(
   (
@@ -551,13 +553,15 @@ const SidebarMenuButton = React.forwardRef<
       size = "default",
       tooltip,
       className,
+      href,
+      children,
       ...props
     },
     ref
   ) => {
-    const Comp = asChild ? Slot : "button"
     const { isMobile, state } = useSidebar()
-
+    const Comp = asChild ? Slot : "button"
+    
     const button = (
       <Comp
         ref={ref}
@@ -566,11 +570,21 @@ const SidebarMenuButton = React.forwardRef<
         data-active={isActive}
         className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
         {...props}
-      />
+      >
+        {children}
+      </Comp>
+    )
+
+    const buttonWithOptionalLink = href ? (
+      <NextLink href={href} passHref legacyBehavior>
+        {button}
+      </NextLink>
+    ) : (
+      button
     )
 
     if (!tooltip) {
-      return button
+      return buttonWithOptionalLink
     }
 
     if (typeof tooltip === "string") {
@@ -581,7 +595,7 @@ const SidebarMenuButton = React.forwardRef<
 
     return (
       <Tooltip>
-        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipTrigger asChild>{buttonWithOptionalLink}</TooltipTrigger>
         <TooltipContent
           side="right"
           align="center"
