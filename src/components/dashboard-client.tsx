@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 import type { Expense, Income, Budget } from "@/lib/types";
 import { INCOME_CATEGORY } from "@/lib/constants";
@@ -25,6 +25,11 @@ export function DashboardClient() {
   const [isAddExpenseOpen, setAddExpenseOpen] = useState(false);
   const [isAddIncomeOpen, setAddIncomeOpen] = useState(false);
   const [isSetBudgetOpen, setSetBudgetOpen] = useState(false);
+
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleAddExpense = (expense: Omit<Expense, "id">) => {
     setExpenses([...expenses, { ...expense, id: crypto.randomUUID(), date: new Date().toISOString() }]);
@@ -55,6 +60,7 @@ export function DashboardClient() {
         <DashboardHeader onSetBudget={() => setSetBudgetOpen(true)} />
         <main className="flex-1 overflow-y-auto pb-28">
           <SummaryCards
+            isClient={isClient}
             totalIncome={totalIncome}
             totalExpenses={totalExpenses}
             savings={savings}

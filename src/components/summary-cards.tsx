@@ -2,20 +2,40 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, PiggyBank } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type SummaryCardsProps = {
+  isClient: boolean;
   totalIncome: number;
   totalExpenses: number;
   savings: number;
 };
 
-export function SummaryCards({ totalIncome, totalExpenses, savings }: SummaryCardsProps) {
+export function SummaryCards({ isClient, totalIncome, totalExpenses, savings }: SummaryCardsProps) {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
       currency: "INR",
     }).format(amount);
   };
+
+  const renderCardContent = (value: number) => {
+    if (!isClient) {
+      return <Skeleton className="h-8 w-3/4" />;
+    }
+    return <div className="text-2xl font-bold">{formatCurrency(value)}</div>;
+  };
+  
+  const renderSavingsContent = (value: number) => {
+    if (!isClient) {
+      return <Skeleton className="h-8 w-3/4" />;
+    }
+    return (
+       <div className={`text-2xl font-bold ${value < 0 ? 'text-destructive' : 'text-primary'}`}>
+        {formatCurrency(value)}
+      </div>
+    )
+  }
 
   return (
     <div className="grid gap-4 md:grid-cols-3 p-4 md:p-6">
@@ -25,7 +45,7 @@ export function SummaryCards({ totalIncome, totalExpenses, savings }: SummaryCar
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="text-2xl font-bold">{formatCurrency(totalIncome)}</div>
+          {renderCardContent(totalIncome)}
           <p className="text-xs text-muted-foreground">This month's earnings</p>
         </CardContent>
       </Card>
@@ -35,7 +55,7 @@ export function SummaryCards({ totalIncome, totalExpenses, savings }: SummaryCar
           <TrendingDown className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="text-2xl font-bold">{formatCurrency(totalExpenses)}</div>
+          {renderCardContent(totalExpenses)}
           <p className="text-xs text-muted-foreground">This month's spending</p>
         </CardContent>
       </Card>
@@ -45,9 +65,7 @@ export function SummaryCards({ totalIncome, totalExpenses, savings }: SummaryCar
           <PiggyBank className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent className="pt-0">
-          <div className={`text-2xl font-bold ${savings < 0 ? 'text-destructive' : 'text-primary'}`}>
-            {formatCurrency(savings)}
-          </div>
+          {renderSavingsContent(savings)}
           <p className="text-xs text-muted-foreground">Remaining after expenses</p>
         </CardContent>
       </Card>
