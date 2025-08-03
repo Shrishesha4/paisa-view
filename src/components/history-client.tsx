@@ -5,6 +5,7 @@ import { useLocalStorage } from "@/hooks/use-local-storage";
 import type { Expense, Income } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 
@@ -36,6 +37,27 @@ export function HistoryClient() {
     return new Date(dateString).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
   }
 
+  const groupedTransactions = React.useMemo(() => {
+    return transactions.reduce((acc, transaction) => {
+        const date = formatDate(transaction.date);
+        if (!acc[date]) {
+            acc[date] = {
+                transactions: [],
+                totalCredit: 0,
+                totalDebit: 0,
+            };
+        }
+        acc[date].transactions.push(transaction);
+        if (transaction.type === 'income') {
+            acc[date].totalCredit += transaction.amount;
+        } else {
+            acc[date].totalDebit += transaction.amount;
+        }
+        return acc;
+    }, {} as Record<string, { transactions: Transaction[], totalCredit: number, totalDebit: number }>);
+  }, [transactions]);
+
+
   return (
      <div className="flex-1 flex flex-col bg-background p-4 md:p-6">
         <header className="mb-4 flex items-center gap-2">
@@ -47,57 +69,77 @@ export function HistoryClient() {
         </header>
         <main className="flex-1">
             <Card>
-                <CardContent className="pt-0 md:pt-6">
+                <CardContent className="pt-6">
                     {transactions.length === 0 ? (
                     <div className="text-center text-muted-foreground py-10">No transactions yet. Start by adding some income or expenses.</div>
                     ) : (
-                    <Table>
-                        <TableHeader className="hidden md:table-header-group">
-                        <TableRow>
-                            <TableHead className="w-[60px]">S.No</TableHead>
-                            <TableHead>Date</TableHead>
-                            <TableHead>Time</TableHead>
-                            <TableHead>Description</TableHead>
-                            <TableHead className="text-right">Credit (INR)</TableHead>
-                            <TableHead className="text-right">Debit (INR)</TableHead>
-                        </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                        {transactions.map((transaction, index) => (
-                           <React.Fragment key={transaction.id}>
-                            {/* Mobile Row */}
-                            <TableRow className="md:hidden border-b">
-                                <TableCell colSpan={2}>
-                                  <div className="font-medium">{transaction.description}</div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {formatDate(transaction.date)} - {formatTime(transaction.date)}
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  {transaction.type === 'income' ?
-                                    <div className={cn("font-semibold", 'text-success')}>{formatCurrency(transaction.amount)}</div> :
-                                    <div className={cn("font-semibold", 'text-destructive')}>{formatCurrency(transaction.amount)}</div>
-                                  }
-                                </TableCell>
-                            </TableRow>
+                      <Accordion type="single" collapsible className="w-full">
+                        {Object.entries(groupedTransactions).map(([date, { transactions: dailyTransactions, totalCredit, totalDebit }], index) => (
+                           <AccordionItem value={`item-${index}`} key={date}>
+                             <AccordionTrigger>
+                               <div className="flex justify-between w-full pr-4">
+                                 <div className="text-left">
+                                   <div className="font-semibold">{date}</div>
+                                   <div className="text-xs text-muted-foreground">
+                                    {dailyTransactions.length} transaction(s)
+                                   </div>
+                                 </div>
+                                 <div className="text-right">
+                                    <div className="font-semibold text-success">{formatCurrency(totalCredit)}</div>
+                                    <div className="text-xs text-destructive">{formatCurrency(totalDebit)}</div>
+                                 </div>
+                               </div>
+                             </AccordionTrigger>
+                             <AccordionContent>
+                               <Table>
+                                  <TableHeader className="hidden md:table-header-group">
+                                  <TableRow>
+                                      <TableHead className="w-[60px]">S.No</TableHead>
+                                      <TableHead>Time</TableHead>
+                                      <TableHead>Description</TableHead>
+                                      <TableHead className="text-right">Credit (INR)</TableHead>
+                                      <TableHead className="text-right">Debit (INR)</TableHead>
+                                  </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                  {dailyTransactions.map((transaction, index) => (
+                                    <React.Fragment key={transaction.id}>
+                                      {/* Mobile Row */}
+                                      <TableRow className="md:hidden border-b">
+                                          <TableCell colSpan={2}>
+                                            <div className="font-medium">{transaction.description}</div>
+                                            <div className="text-xs text-muted-foreground">
+                                              {formatTime(transaction.date)}
+                                            </div>
+                                          </TableCell>
+                                          <TableCell className="text-right">
+                                            {transaction.type === 'income' ?
+                                              <div className={cn("font-semibold", 'text-success')}>{formatCurrency(transaction.amount)}</div> :
+                                              <div className={cn("font-semibold", 'text-destructive')}>{formatCurrency(transaction.amount)}</div>
+                                            }
+                                          </TableCell>
+                                      </TableRow>
 
-                            {/* Desktop Row */}
-                            <TableRow className="hidden md:table-row">
-                                <TableCell>{transactions.length - index}</TableCell>
-                                <TableCell>{formatDate(transaction.date)}</TableCell>
-                                <TableCell>{formatTime(transaction.date)}</TableCell>
-                                <TableCell className="font-medium">{transaction.description}</TableCell>
-                                <TableCell className={cn("text-right font-semibold", 'text-success')}>
-                                    {transaction.type === 'income' ? formatCurrency(transaction.amount) : '-'}
-                                </TableCell>
-                                <TableCell className={cn("text-right font-semibold", 'text-destructive')}>
-                                    {transaction.type === 'expense' ? formatCurrency(transaction.amount) : '-'}
-                                </TableCell>
-                            </TableRow>
-                           </React.Fragment>
+                                      {/* Desktop Row */}
+                                      <TableRow className="hidden md:table-row">
+                                          <TableCell>{dailyTransactions.length - index}</TableCell>
+                                          <TableCell>{formatTime(transaction.date)}</TableCell>
+                                          <TableCell className="font-medium">{transaction.description}</TableCell>
+                                          <TableCell className={cn("text-right font-semibold", 'text-success')}>
+                                              {transaction.type === 'income' ? formatCurrency(transaction.amount) : '-'}
+                                          </TableCell>
+                                          <TableCell className={cn("text-right font-semibold", 'text-destructive')}>
+                                              {transaction.type === 'expense' ? formatCurrency(transaction.amount) : '-'}
+                                          </TableCell>
+                                      </TableRow>
+                                    </React.Fragment>
+                                  ))}
+                                  </TableBody>
+                              </Table>
+                             </AccordionContent>
+                           </AccordionItem>
                         ))}
-                        </TableBody>
-                    </Table>
+                      </Accordion>
                     )}
                 </CardContent>
             </Card>
