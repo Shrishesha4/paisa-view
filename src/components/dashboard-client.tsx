@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -14,12 +15,13 @@ import { RecentTransactions } from "./recent-transactions";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
+import { AiAssistant } from "./ai-assistant";
 
 export function DashboardClient() {
   const { toast } = useToast();
   const [expenses, setExpenses] = useLocalStorage<Expense[]>("expenses", []);
   const [income, setIncome] = useLocalStorage<Income[]>("income", []);
-  const [budget, setBudget] = useLocalStorage<Budget>("budget", { amount: 0 });
+  const [budget, setBudget] = useLocalStorage<Budget>("budget", { amount: 1000 });
   
   const [isAddExpenseOpen, setAddExpenseOpen] = useState(false);
   const [isAddIncomeOpen, setAddIncomeOpen] = useState(false);
@@ -66,6 +68,7 @@ export function DashboardClient() {
           />
           <div className="grid gap-4 md:gap-6 p-4 md:p-6 grid-cols-1 lg:grid-cols-3">
             <ExpensePieChart isClient={isClient} expenses={expenses} />
+            <AiAssistant expenses={expenses} income={income} />
             <RecentTransactions isClient={isClient} expenses={expenses} income={income} />
           </div>
         </main>
@@ -73,7 +76,7 @@ export function DashboardClient() {
 
        <div className="fixed bottom-0 left-0 right-0 z-10 p-4 md:hidden">
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent pointer-events-none"></div>
-        <div className="relative flex justify-center items-center gap-2">
+        <div className="relative grid grid-cols-2 gap-2">
             <Button onClick={() => setAddExpenseOpen(true)} size="lg" className="shadow-lg"><PlusCircle className="mr-2 h-4 w-4" /> Expense</Button>
             <Button onClick={() => setAddIncomeOpen(true)} variant="secondary" size="lg" className="shadow-lg">Add Income</Button>
         </div>
