@@ -7,7 +7,7 @@ import {
   SidebarMenuButton,
   SidebarContent,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Wallet, BarChart2 } from 'lucide-react';
+import { LayoutDashboard, Wallet, History } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
 export function SidebarNav() {
@@ -33,6 +33,16 @@ export function SidebarNav() {
             >
               <LayoutDashboard />
               <span>Dashboard</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              href="/history"
+              isActive={pathname === '/history'}
+              tooltip="History"
+            >
+              <History />
+              <span>History</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
