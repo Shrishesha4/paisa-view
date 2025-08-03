@@ -1,6 +1,5 @@
 'use server';
 
-import { run } from '@genkit-ai/next';
 import { suggestSavings } from '@/ai/flows/suggestSavings';
 import type { Expense, Income } from '@/lib/types';
 
@@ -13,7 +12,7 @@ export async function getSavingsSuggestions(expenses: Expense[], income: Income[
       return { success: true, data: "- Start by adding your income and first few expenses to get personalized tips!\n- Create a budget for categories like 'Food' or 'Shopping'.\n- Try setting a small savings goal for this month." };
     }
 
-    const suggestions = await run(suggestSavings, {
+    const suggestions = await suggestSavings({
       expenses: expenseData,
       income: totalIncome,
     });
