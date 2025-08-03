@@ -12,6 +12,8 @@ import { BudgetChart } from "./budget-chart";
 import { RecentTransactions } from "./recent-transactions";
 import { AiAssistant } from "./ai-assistant";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { PlusCircle } from "lucide-react";
 
 export function DashboardClient() {
   const { toast } = useToast();
@@ -22,7 +24,7 @@ export function DashboardClient() {
   const [isAddIncomeOpen, setAddIncomeOpen] = useState(false);
 
   const handleAddExpense = (expense: Omit<Expense, "id">) => {
-    setExpenses([...expenses, { ...expense, id: crypto.randomUUID() }]);
+    setExpenses([...expenses, { ...expense, id: crypto.randomUUID(), date: new Date().toISOString() }]);
     toast({ title: "Expense Added", description: "Your expense has been successfully recorded." });
   };
 
@@ -42,11 +44,8 @@ export function DashboardClient() {
   return (
     <>
       <div className="flex-1 flex flex-col bg-background">
-        <DashboardHeader
-          onAddExpense={() => setAddExpenseOpen(true)}
-          onAddIncome={() => setAddIncomeOpen(true)}
-        />
-        <main className="flex-1 overflow-y-auto">
+        <DashboardHeader />
+        <main className="flex-1 overflow-y-auto pb-28">
           <SummaryCards
             totalIncome={totalIncome}
             totalExpenses={totalExpenses}
@@ -58,6 +57,14 @@ export function DashboardClient() {
             <RecentTransactions expenses={expenses} income={income} />
           </div>
         </main>
+      </div>
+
+       <div className="fixed bottom-0 left-0 right-0 z-10 p-4">
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent pointer-events-none"></div>
+        <div className="relative flex justify-center items-center gap-2">
+            <Button onClick={() => setAddExpenseOpen(true)} size="lg" className="shadow-lg"><PlusCircle className="mr-2 h-4 w-4" /> Expense</Button>
+            <Button onClick={() => setAddIncomeOpen(true)} variant="secondary" size="lg" className="shadow-lg">Add Income</Button>
+        </div>
       </div>
 
       <AddExpenseDialog
