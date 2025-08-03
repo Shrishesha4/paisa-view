@@ -71,8 +71,8 @@ export function RecentTransactions({ expenses, income }: RecentTransactionsProps
                       </Badge>
                     </TableCell>
                     <TableCell>{formatDate(transaction.date)}</TableCell>
-                    <TableCell className={cn('text-right font-semibold', transaction.type === 'income' ? 'text-success' : '')}>
-                      {transaction.type === 'expense' && '-'}{formatCurrency(transaction.amount)}
+                    <TableCell className={cn('text-right font-semibold', transaction.type === 'income' ? 'text-success' : 'text-destructive')}>
+                      {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
                     </TableCell>
                   </TableRow>
                 );
