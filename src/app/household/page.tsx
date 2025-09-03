@@ -53,12 +53,11 @@ export default function HouseholdPage() {
   const monthlySavings = monthlyIncome - monthlyExpenses;
 
   useEffect(() => {
-    if (!user) {
-      router.push('/');
-      return;
+    // Only load household data if user is authenticated
+    if (user) {
+      loadHouseholdData();
     }
-    loadHouseholdData();
-  }, [user, router]);
+  }, [user]);
 
   // Set up periodic data refresh check (silent background refresh)
   useEffect(() => {
@@ -319,22 +318,143 @@ export default function HouseholdPage() {
   if (!user) {
     return (
       <div className="flex-1 flex flex-col bg-background px-4 md:px-8 py-6 md:py-8 container mx-auto">
-        <div className="text-center space-y-6">
-          <Users className="mx-auto h-20 w-20 text-muted-foreground" />
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold">Household Feature</h1>
-            <p className="text-lg text-muted-foreground max-w-md mx-auto">
-              Sign in to access household features and collaborate with family members on finances.
-            </p>
+        <div className="max-w-4xl mx-auto space-y-8">
+          {/* Hero Section */}
+          <div className="text-center space-y-6">
+            <Users className="mx-auto h-24 w-24 text-primary" />
+            <div className="space-y-4">
+              <h1 className="text-4xl md:text-5xl font-bold">Household Finance Management</h1>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Collaborate with family members to track expenses, manage budgets, and achieve financial goals together.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button onClick={() => router.push('/auth')} size="lg" className="text-lg px-8 py-6">
+                <User className="mr-2 h-5 w-5" />
+                Get Started - Sign Up Free
+              </Button>
+              <Button variant="outline" onClick={() => router.push('/')} size="lg" className="text-lg px-8 py-6">
+                <Home className="mr-2 h-5 w-5" />
+                Explore Dashboard
+              </Button>
+            </div>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button onClick={() => router.push('/auth')} size="lg">
-              <User className="mr-2 h-4 w-4" />
-              Sign In
-            </Button>
-            <Button variant="outline" onClick={() => router.push('/')} size="lg">
-              <Home className="mr-2 h-4 w-4" />
-              Go to Dashboard
+
+          {/* Features Grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Feature 1 */}
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
+              <div className="bg-primary/10 p-3 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <Users className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Family Collaboration</h3>
+              <p className="text-muted-foreground">
+                Invite family members to join your household and share financial responsibilities.
+              </p>
+            </Card>
+
+            {/* Feature 2 */}
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
+              <div className="bg-green-100 dark:bg-green-900/20 p-3 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <TrendingUp className="h-8 w-8 text-green-600 dark:text-green-400" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Shared Budgets</h3>
+              <p className="text-muted-foreground">
+                Set and track household budgets together with real-time updates and notifications.
+              </p>
+            </Card>
+
+            {/* Feature 3 */}
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
+              <div className="bg-blue-100 dark:bg-blue-900/20 p-3 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <DollarSign className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Expense Tracking</h3>
+              <p className="text-muted-foreground">
+                Monitor household expenses with detailed categorization and spending insights.
+              </p>
+            </Card>
+
+            {/* Feature 4 */}
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
+              <div className="bg-purple-100 dark:bg-purple-900/20 p-3 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <Calendar className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Monthly Reports</h3>
+              <p className="text-muted-foreground">
+                Get comprehensive monthly financial reports and track progress over time.
+              </p>
+            </Card>
+
+            {/* Feature 5 */}
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
+              <div className="bg-orange-100 dark:bg-orange-900/20 p-3 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <Settings className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Admin Controls</h3>
+              <p className="text-muted-foreground">
+                Manage household members, transfer admin roles, and control access permissions.
+              </p>
+            </Card>
+
+            {/* Feature 6 */}
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
+              <div className="bg-red-100 dark:bg-red-900/20 p-3 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <RefreshCw className="h-8 w-8 text-red-600 dark:text-red-400" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Real-time Sync</h3>
+              <p className="text-muted-foreground">
+                All household data syncs in real-time across all family members' devices.
+              </p>
+            </Card>
+          </div>
+
+          {/* Benefits Section */}
+          <Card className="p-8 bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+            <div className="text-center space-y-4">
+              <h2 className="text-2xl font-bold">Why Choose Household Finance Management?</h2>
+              <div className="grid md:grid-cols-2 gap-6 text-left">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-primary rounded-full"></div>
+                    <span className="font-medium">Transparency in family finances</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-primary rounded-full"></div>
+                    <span className="font-medium">Shared financial goals and accountability</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-primary rounded-full"></div>
+                    <span className="font-medium">Better budget planning and control</span>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-primary rounded-full"></div>
+                    <span className="font-medium">Reduced financial stress and conflicts</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-primary rounded-full"></div>
+                    <span className="font-medium">Improved financial literacy for all members</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-primary rounded-full"></div>
+                    <span className="font-medium">Secure and private family data</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Final CTA */}
+          <div className="text-center space-y-4">
+            <h2 className="text-2xl font-bold">Ready to Get Started?</h2>
+            <p className="text-muted-foreground">
+              Join thousands of families who are already managing their finances together.
+            </p>
+            <Button onClick={() => router.push('/auth')} size="lg" className="text-lg px-8 py-6">
+              <User className="mr-2 h-5 w-5" />
+              Create Your Household Today
             </Button>
           </div>
         </div>

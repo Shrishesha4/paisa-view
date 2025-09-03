@@ -93,33 +93,16 @@ export function Navbar() {
             Dashboard
           </Link>
           
-          {user && (
-            <>
-              {userData?.householdId ? (
-                <Link
-                  href="/household"
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-medium",
-                    pathname === "/household" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent hover:text-primary"
-                  )}
-                >
-                  <Users className="h-4 w-4" />
-                  Household
-                </Link>
-              ) : (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg">
-                  <HouseholdDialog
-                    trigger={
-                      <Button variant="ghost" size="sm" className="h-4 w-4 p-0">
-                        <Users className="h-4 w-4" />
-                      </Button>
-                    }
-                  />
-                  <span className="text-sm font-medium text-muted-foreground">Household</span>
-                </div>
-              )}
-            </>
-          )}
+          <Link
+            href="/household"
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-medium",
+              pathname === "/household" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent hover:text-primary"
+            )}
+          >
+            <Users className="h-4 w-4" />
+            Household
+          </Link>
           
           <Link
             href="/history"
@@ -148,33 +131,16 @@ export function Navbar() {
           </Link>
           
           {/* Household - Center */}
-          {user && (
-            <>
-              {userData?.householdId ? (
-                <Link
-                  href="/household"
-                  className={cn(
-                    "flex flex-col items-center gap-1 p-2 rounded-lg transition-colors w-24",
-                    pathname === "/household" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent"
-                  )}
-                >
-                  <Users className="h-5 w-5" />
-                  <span className="text-xs font-medium">Household</span>
-                </Link>
-              ) : (
-                <div className="flex flex-col items-center gap-1 p-2 rounded-lg w-24">
-                  <HouseholdDialog
-                    trigger={
-                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
-                        <Users className="h-5 w-5" />
-                      </Button>
-                    }
-                  />
-                  <span className="text-xs font-medium">Household</span>
-                </div>
-              )}
-            </>
-          )}
+          <Link
+            href="/household"
+            className={cn(
+              "flex flex-col items-center gap-1 p-2 rounded-lg transition-colors w-24",
+              pathname === "/household" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent"
+            )}
+          >
+            <Users className="h-5 w-5" />
+            <span className="text-xs font-medium">Household</span>
+          </Link>
           
           {/* History - Right */}
           <Link
