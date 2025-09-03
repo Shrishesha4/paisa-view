@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import type { Expense } from "./types";
@@ -11,8 +10,7 @@ const KEYWORD_ALIAS_MAP: Record<string, string> = {
   maligai: 'groceries',
   maliahi: 'groceries',
   med: 'medicine',
-  tablet: 'medicine',
-  vagetables: 'vegetable',
+  vagetables: 'vegetables',
   shop: 'shopping',
 };
 
@@ -21,7 +19,9 @@ const KEYWORD_TO_CATEGORY_MAP: Record<string, string> = {
   paratha: 'Food',
   groceries: 'Groceries',
   medicine: 'Health',
+  tablet: 'Health',
   vegetable: 'Groceries',
+  vegetables: 'Groceries',
   milk: 'Groceries',
   rice: 'Groceries',
   oil: 'Groceries',
@@ -31,8 +31,9 @@ const KEYWORD_TO_CATEGORY_MAP: Record<string, string> = {
   tea: 'Food',
   snacks: 'Food',
   gift: 'Gifts',
-  mango: 'Utilities',
-  leaves: 'Utilities',
+  mango: 'Groceries',
+  leaves: 'Groceries', // Assuming leaves are for cooking/groceries
+  thebashesha: 'Other', // A placeholder, can be refined
 };
 
 /**
@@ -97,6 +98,7 @@ class CategorizationModel {
     for (const keyword of keywords) {
       // Priority 1: Direct mapping from our dictionary
       if (KEYWORD_TO_CATEGORY_MAP[keyword]) {
+        // Return the most specific mapping immediately
         return KEYWORD_TO_CATEGORY_MAP[keyword];
       }
       
@@ -116,7 +118,7 @@ class CategorizationModel {
    * Extracts, normalizes, and corrects meaningful keywords from a description string.
    */
   private extractKeywords(description: string): string[] {
-    const stopWords = new Set(['and', 'the', 'for', 'a', 'in', 'with', 'to', 'of', 'from']);
+    const stopWords = new Set(['and', 'the', 'for', 'a', 'in', 'with', 'to', 'of', 'from', '-']);
     return description
       .toLowerCase()
       .split(/\s+/)
