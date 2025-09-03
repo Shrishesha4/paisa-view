@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +26,8 @@ import {
   ChevronRight,
   MoreHorizontal,
   User,
-  Plus
+  Plus,
+  Loader2
 } from "lucide-react";
 import { FirestoreService, UserData, Household } from "@/lib/firestore";
 import { useToast } from "@/hooks/use-toast";
@@ -52,7 +54,7 @@ export default function HouseholdPage() {
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [householdName, setHouseholdName] = useState('');
   const [joinHouseholdName, setJoinHouseholdName] = useState('');
-  
+
   // Calculated values
   const totalSavings = totalIncome - totalExpenses;
   const monthlySavings = monthlyIncome - monthlyExpenses;
@@ -171,6 +173,14 @@ export default function HouseholdPage() {
       setLoading(false);
     }
   };
+
+  // Pull-to-refresh functionality
+  const { isRefreshing, pullDistance, elementRef, shouldShowRefreshIndicator } = usePullToRefresh({
+    onRefresh: loadHouseholdData,
+    threshold: 80,
+    maxPullDistance: 120,
+    resistance: 0.6
+  });
 
   const calculateAggregatedFinances = (members: UserData[]) => {
     console.log('🔍 Calculating aggregated finances for members:', members);
@@ -625,7 +635,29 @@ export default function HouseholdPage() {
 
 
   return (
-    <div className="flex-1 flex flex-col bg-background px-4 md:px-8 py-6 md:py-8 container mx-auto">
+    <div 
+      ref={elementRef}
+      className="flex-1 flex flex-col bg-background px-4 md:px-8 py-6 md:py-8 container mx-auto"
+    >
+      {/* Pull-to-refresh indicator */}
+      {shouldShowRefreshIndicator && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="bg-primary text-primary-foreground px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+            {isRefreshing ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Refreshing...</span>
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4" />
+                <span>Pull to refresh</span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       <header className="mb-6 md:mb-8">
         <div className="space-y-4">
           {/* Title and info section */}
@@ -1048,7 +1080,7 @@ export default function HouseholdPage() {
                   id="householdName"
                   type="text"
                   placeholder="Enter household name"
-                  className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary mobile-input"
                   value={householdName}
                   onChange={(e) => setHouseholdName(e.target.value)}
                 />
@@ -1088,7 +1120,7 @@ export default function HouseholdPage() {
                   id="joinHouseholdName"
                   type="text"
                   placeholder="Enter household name"
-                  className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary mobile-input"
                   value={joinHouseholdName}
                   onChange={(e) => setJoinHouseholdName(e.target.value)}
                 />

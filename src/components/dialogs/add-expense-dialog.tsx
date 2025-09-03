@@ -46,6 +46,19 @@ type AddExpenseDialogProps = {
 export function AddExpenseDialog({ isOpen, onClose, onAddExpense }: AddExpenseDialogProps) {
   const [expenses] = useLocalStorage<Expense[]>("expenses", []);
 
+  // Prevent body scroll when modal is open
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [isOpen]);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -103,7 +116,8 @@ export function AddExpenseDialog({ isOpen, onClose, onAddExpense }: AddExpenseDi
         onClose();
       }
     }}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="modal-fixed">
+        <div className="modal-content">
         <DialogHeader>
           <DialogTitle>Add New Expense</DialogTitle>
           <DialogDescription>
@@ -119,7 +133,11 @@ export function AddExpenseDialog({ isOpen, onClose, onAddExpense }: AddExpenseDi
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Coffee with friends" {...field} />
+                    <Input 
+                      placeholder="e.g., Coffee with friends" 
+                      className="mobile-input" 
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -132,7 +150,12 @@ export function AddExpenseDialog({ isOpen, onClose, onAddExpense }: AddExpenseDi
                 <FormItem>
                   <FormLabel>Amount</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="0.00" {...field} />
+                    <Input 
+                      type="number" 
+                      placeholder="0.00" 
+                      className="mobile-input" 
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -145,7 +168,11 @@ export function AddExpenseDialog({ isOpen, onClose, onAddExpense }: AddExpenseDi
                 <FormItem>
                   <FormLabel>Category</FormLabel>
                    <FormControl>
-                      <Input placeholder="e.g., Food" {...field} />
+                      <Input 
+                        placeholder="e.g., Food" 
+                        className="mobile-input" 
+                        {...field} 
+                      />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -158,7 +185,11 @@ export function AddExpenseDialog({ isOpen, onClose, onAddExpense }: AddExpenseDi
                 <FormItem>
                   <FormLabel>Date</FormLabel>
                   <FormControl>
-                    <Input type="date" {...field} />
+                    <Input 
+                      type="date" 
+                      className="mobile-input" 
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -172,6 +203,7 @@ export function AddExpenseDialog({ isOpen, onClose, onAddExpense }: AddExpenseDi
             </DialogFooter>
           </form>
         </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );

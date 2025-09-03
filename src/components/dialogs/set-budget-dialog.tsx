@@ -38,6 +38,19 @@ type SetBudgetDialogProps = {
 };
 
 export function SetBudgetDialog({ isOpen, onClose, onSetBudget, currentBudget }: SetBudgetDialogProps) {
+  // Prevent body scroll when modal is open
+  React.useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+    
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [isOpen]);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -65,7 +78,8 @@ export function SetBudgetDialog({ isOpen, onClose, onSetBudget, currentBudget }:
 
   return (
     <Dialog open={isOpen} onOpenChange={handleDialogChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="modal-fixed">
+        <div className="modal-content">
         <DialogHeader>
           <DialogTitle>Set Monthly Budget</DialogTitle>
           <DialogDescription>
@@ -81,7 +95,12 @@ export function SetBudgetDialog({ isOpen, onClose, onSetBudget, currentBudget }:
                 <FormItem>
                   <FormLabel>Total Monthly Budget</FormLabel>
                   <FormControl>
-                    <Input type="number" placeholder="0.00" {...field} />
+                    <Input 
+                      type="number" 
+                      placeholder="0.00" 
+                      className="mobile-input" 
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -95,6 +114,7 @@ export function SetBudgetDialog({ isOpen, onClose, onSetBudget, currentBudget }:
             </DialogFooter>
           </form>
         </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );

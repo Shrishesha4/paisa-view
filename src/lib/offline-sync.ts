@@ -106,9 +106,8 @@ class OfflineSyncManager {
     // Load existing sync queue from localStorage
     this.loadSyncQueue();
     
-    // Set up online/offline event listeners
-    window.addEventListener('online', () => this.handleOnline());
-    window.addEventListener('offline', () => this.handleOffline());
+    // Set up enhanced network event listeners
+    this.setupNetworkListeners();
     
     // Start periodic sync attempts
     this.startPeriodicSync();
@@ -181,12 +180,40 @@ class OfflineSyncManager {
   }
 
   private startPeriodicSync() {
-    // Attempt sync every 30 seconds when online
+    // Attempt sync every 10 seconds when online for faster sync
     this.syncInterval = setInterval(() => {
       if (this.isOnline && this.syncQueue.length > 0 && !this.isSyncing) {
         this.attemptSync();
       }
-    }, 30000);
+    }, 10000);
+  }
+
+  // Enhanced network detection with automatic sync
+  private setupNetworkListeners() {
+    const handleOnline = () => {
+      console.log('🌐 Network connection restored');
+      this.isOnline = true;
+      this.clearNetworkErrors();
+      
+      // Immediately attempt sync when coming back online
+      setTimeout(() => {
+        this.attemptSync();
+      }, 1000);
+    };
+
+    const handleOffline = () => {
+      console.log('📱 Network connection lost');
+      this.isOnline = false;
+      this.addSyncError('network-offline', 'Network connection lost', 'system');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }
 
   private startDataIntegrityChecks() {
@@ -620,6 +647,12 @@ class OfflineSyncManager {
     if (this.syncErrors.length > 50) {
       this.syncErrors = this.syncErrors.slice(-50);
     }
+  }
+
+  private clearNetworkErrors() {
+    this.syncErrors = this.syncErrors.filter(error => 
+      !error.error.includes('network-offline')
+    );
   }
 
   private handleSyncError() {

@@ -14,8 +14,9 @@ import { ExpensePieChart } from "./expense-pie-chart";
 import { RecentTransactions } from "./recent-transactions";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Loader2 } from "lucide-react";
 import { ClearDataDialog } from "./dialogs/clear-data-dialog";
+import { Skeleton, SummaryCardSkeleton, TransactionCardSkeleton, ChartSkeleton } from "@/components/ui/skeleton";
 import { useOfflineSync } from "@/hooks/use-offline-sync";
 import { useAuth } from "@/lib/auth-context";
 import { FirestoreService, UserData } from "@/lib/firestore";
@@ -36,6 +37,8 @@ export function DashboardClient() {
   const [isAddIncomeOpen, setAddIncomeOpen] = useState(false);
   const [isSetBudgetOpen, setSetBudgetOpen] = useState(false);
   const [isClearDataOpen, setClearDataOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const [isClient, setIsClient] = useState(false);
   useEffect(() => {
@@ -43,13 +46,18 @@ export function DashboardClient() {
   }, []);
 
   const handleAddExpense = (expense: Omit<Expense, "id">) => {
-    const newExpense = { ...expense, id: generateId(), date: new Date().toISOString() };
-    setExpenses([...expenses, newExpense]);
-    
-    // Add to offline sync queue
-    addExpenseToSync(newExpense, 'create');
-    
-    toast({ title: "Expense Added", description: "Your expense has been successfully recorded." });
+    setIsLoading(true);
+    try {
+      const newExpense = { ...expense, id: generateId(), date: new Date().toISOString() };
+      setExpenses([...expenses, newExpense]);
+      
+      // Add to offline sync queue
+      addExpenseToSync(newExpense, 'create');
+      
+      toast({ title: "Expense Added", description: "Your expense has been successfully recorded." });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Generate unique ID that works across all browsers
@@ -58,27 +66,37 @@ export function DashboardClient() {
   };
 
   const handleAddIncome = (newIncome: Omit<Income, "id" | "category" | "date">) => {
-    const newIncomeRecord: Income = { 
-      ...newIncome, 
-      id: generateId(), 
-      category: INCOME_CATEGORY, 
-      date: new Date().toISOString() 
-    };
-    setIncome([...income, newIncomeRecord]);
-    
-    // Add to offline sync queue
-    addIncomeToSync(newIncomeRecord, 'create');
-    
-    toast({ title: "Income Added", description: "Your income has been successfully recorded." });
+    setIsLoading(true);
+    try {
+      const newIncomeRecord: Income = { 
+        ...newIncome, 
+        id: generateId(), 
+        category: INCOME_CATEGORY, 
+        date: new Date().toISOString() 
+      };
+      setIncome([...income, newIncomeRecord]);
+      
+      // Add to offline sync queue
+      addIncomeToSync(newIncomeRecord, 'create');
+      
+      toast({ title: "Income Added", description: "Your income has been successfully recorded." });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSetBudget = (newBudget: Budget) => {
-    setBudget(newBudget);
-    
-    // Add to offline sync queue
-    addBudgetToSync(newBudget, 'update');
-    
-    toast({ title: "Budget Updated", description: "Your monthly budget has been set." });
+    setIsLoading(true);
+    try {
+      setBudget(newBudget);
+      
+      // Add to offline sync queue
+      addBudgetToSync(newBudget, 'update');
+      
+      toast({ title: "Budget Updated", description: "Your monthly budget has been set." });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleManualSync = async () => {
@@ -91,6 +109,7 @@ export function DashboardClient() {
       return;
     }
 
+    setIsSyncing(true);
     try {
       toast({ 
         title: "Syncing Data", 
@@ -184,6 +203,8 @@ export function DashboardClient() {
         description: "Failed to sync data to the cloud. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsSyncing(false);
     }
   };
 
