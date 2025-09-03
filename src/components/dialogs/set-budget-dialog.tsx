@@ -1,3 +1,4 @@
+
 "use client";
 
 import * as React from "react";
@@ -63,7 +64,7 @@ export function SetBudgetDialog({ isOpen, onClose, onSetBudget, currentBudget }:
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleDialogClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleDialogClose()} dismissible={false}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Set Monthly Budget</DialogTitle>
