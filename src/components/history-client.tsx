@@ -36,12 +36,17 @@ export function HistoryClient() {
 
   const handleBatchCategorize = async () => {
     setIsCategorizing(true);
+    const originalUncategorizedCount = expenses.filter(e => e.category.toLowerCase() === 'other' && e.description?.trim() && e.description.trim() !== 'N/A').length;
+
     const result = await batchCategorizeExpenses(expenses);
     if (result.success && result.data) {
       setExpenses(result.data);
+      const newUncategorizedCount = result.data.filter(e => e.category.toLowerCase() === 'other' && e.description?.trim() && e.description.trim() !== 'N/A').length;
+      const categorizedCount = originalUncategorizedCount - newUncategorizedCount;
+      
       toast({
         title: "Categorization Complete",
-        description: `Successfully categorized ${result.data.filter(e => e.category !== 'Other').length - expenses.filter(e => e.category !== 'Other').length} expense(s).`,
+        description: `Successfully categorized ${categorizedCount} expense(s).`,
       });
     } else {
       toast({
