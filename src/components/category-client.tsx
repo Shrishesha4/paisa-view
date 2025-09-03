@@ -16,9 +16,11 @@ type CategoryClientProps = {
   categoryName: string;
 };
 
-export function CategoryClient({ categoryName }: CategoryClientProps) {
+export function CategoryClient({ categoryName: encodedCategoryName }: CategoryClientProps) {
   const [expenses] = useLocalStorage<Expense[]>("expenses", []);
   const router = useRouter();
+
+  const categoryName = React.useMemo(() => decodeURIComponent(encodedCategoryName), [encodedCategoryName]);
 
   const filteredExpenses = React.useMemo(() => {
     return expenses
