@@ -102,6 +102,8 @@ export function DashboardClient() {
       <div className="flex-1 flex flex-col bg-background">
         <DashboardHeader
           onSetBudget={() => setSetBudgetOpen(true)}
+          onAddExpense={() => setAddExpenseOpen(true)}
+          onAddIncome={() => setAddIncomeOpen(true)}
           onExport={handleExportData}
           onImport={handleImportData}
         />
