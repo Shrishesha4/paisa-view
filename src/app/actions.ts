@@ -37,7 +37,12 @@ export async function getCategorySuggestion(description: string, existingCategor
 export async function batchCategorizeExpenses(expenses: Expense[]): Promise<{ success: boolean, data?: Expense[], error?: string }> {
     try {
         const existingCategories = [...new Set(expenses.map(e => e.category).filter(c => c.toLowerCase() !== 'other'))];
-        const expensesToCategorize = expenses.filter(e => e.description && e.category.toLowerCase() === 'other');
+        
+        const expensesToCategorize = expenses.filter(e => {
+            const description = e.description?.trim();
+            const category = e.category?.toLowerCase();
+            return description && description !== 'N/A' && category === 'other';
+        });
         
         if (expensesToCategorize.length === 0) {
             return { success: true, data: expenses };
