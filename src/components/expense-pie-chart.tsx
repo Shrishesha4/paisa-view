@@ -46,6 +46,24 @@ const renderLegend = (props: any) => {
   );
 };
 
+const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0];
+      const formattedValue = new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+      }).format(data.value as number);
+  
+      return (
+        <div className="rounded-lg border bg-popover p-2 text-sm shadow-sm text-popover-foreground">
+          <p className="font-medium">{`${data.name} : ${formattedValue}`}</p>
+        </div>
+      );
+    }
+  
+    return null;
+  };
+
 
 export function ExpensePieChart({ isClient, expenses }: ExpensePieChartProps) {
   const chartData = expenses
@@ -91,16 +109,7 @@ export function ExpensePieChart({ isClient, expenses }: ExpensePieChartProps) {
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip
-            contentStyle={{
-              background: "hsl(var(--popover))",
-              borderColor: "hsl(var(--border))",
-              color: "hsl(var(--popover-foreground))",
-            }}
-            formatter={(value) =>
-              new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(value as number)
-            }
-          />
+          <Tooltip content={<CustomTooltip />} />
           <Legend content={renderLegend}/>
         </PieChart>
       </ResponsiveContainer>
