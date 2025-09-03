@@ -20,6 +20,9 @@ import { getCategoryIcon } from "@/lib/constants";
 
 type Transaction = (Expense | Income) & { type: 'income' | 'expense' };
 
+type GroupedData = Record<string, { transactions: Transaction[], totalCredit: number, totalDebit: number }>;
+
+
 export function HistoryClient() {
   const [expenses, setExpenses] = useLocalStorage<Expense[]>("expenses", []);
   const [income, setIncome] = useLocalStorage<Income[]>("income", []);
@@ -32,7 +35,6 @@ export function HistoryClient() {
   const pathname = usePathname();
 
   const sort = searchParams.get('sort') || 'date-desc';
-  const [sortBy, sortOrder] = sort.split('-');
 
   React.useEffect(() => {
     setIsClient(true);
@@ -43,51 +45,76 @@ export function HistoryClient() {
     params.set('sort', value);
     router.replace(`${pathname}?${params.toString()}`);
   }
+  
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
+  
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+  }
 
-  const sortedTransactions: Transaction[] = React.useMemo(() => {
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+  }
+  
+  const allTransactions: Transaction[] = React.useMemo(() => {
     const combined: Transaction[] = [
       ...income.map(i => ({ ...i, type: 'income' as const })),
       ...expenses.map(e => ({ ...e, category: capitalize(e.category), type: 'expense' as const }))
     ];
+    return combined.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [income, expenses]);
 
-    return combined.sort((a, b) => {
-        const dateComparison = new Date(b.date).getTime() - new Date(a.date).getTime();
-
-        if (sortBy === 'income') {
-            if (a.type === 'income' && b.type === 'income') {
-                const amountComparison = a.amount - b.amount;
-                return sortOrder === 'asc' ? amountComparison : -amountComparison;
-            }
+  const groupedTransactionsByDay = React.useMemo(() => {
+    return allTransactions.reduce((acc, transaction) => {
+        const date = formatDate(transaction.date);
+        if (!acc[date]) {
+            acc[date] = {
+                transactions: [],
+                totalCredit: 0,
+                totalDebit: 0,
+            };
         }
-        
-        if (sortBy === 'expense') {
-            if (a.type === 'expense' && b.type === 'expense') {
-                const amountComparison = a.amount - b.amount;
-                return sortOrder === 'asc' ? amountComparison : -amountComparison;
-            }
+        acc[date].transactions.push(transaction);
+        if (transaction.type === 'income') {
+            acc[date].totalCredit += transaction.amount;
+        } else {
+            acc[date].totalDebit += transaction.amount;
         }
-        
-        if (sortBy === 'date') {
-            return sortOrder === 'asc' ? -dateComparison : dateComparison;
+        return acc;
+    }, {} as GroupedData);
+  }, [allTransactions]);
+
+  const groupedTransactionsByMonth = React.useMemo(() => {
+    return allTransactions.reduce((acc, transaction) => {
+        const month = new Date(transaction.date).toLocaleString('en-IN', { month: 'long', year: 'numeric' });
+        if (!acc[month]) {
+            acc[month] = {
+                transactions: [],
+                totalCredit: 0,
+                totalDebit: 0,
+            };
         }
-
-        // Default sort by date desc
-        return dateComparison;
-    });
-  }, [income, expenses, sortBy, sortOrder]);
-
+        acc[month].transactions.push(transaction);
+        if (transaction.type === 'income') {
+            acc[month].totalCredit += transaction.amount;
+        } else {
+            acc[month].totalDebit += transaction.amount;
+        }
+        return acc;
+    }, {} as GroupedData);
+  }, [allTransactions]);
 
   const sortedIncome: Income[] = React.useMemo(() => {
-    return [...income].sort((a, b) => {
-        let comparison = 0;
-        if (sortBy === 'date') {
-            comparison = new Date(b.date).getTime() - new Date(a.date).getTime();
-        } else if (sortBy === 'amount' || sortBy === 'income') {
-            comparison = b.amount - a.amount;
-        }
-        return sortOrder === 'asc' ? -comparison : comparison;
-    });
-  }, [income, sortBy, sortOrder]);
+    return [...income].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [income]);
+
 
   const handleBatchCategorize = () => {
     setIsCategorizing(true);
@@ -110,75 +137,35 @@ export function HistoryClient() {
     }
   };
   
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  };
-  
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
-  }
-
-  const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-  }
-
-  const groupedTransactionsByDay = React.useMemo(() => {
-    return sortedTransactions.reduce((acc, transaction) => {
-        const date = formatDate(transaction.date);
-        if (!acc[date]) {
-            acc[date] = {
-                transactions: [],
-                totalCredit: 0,
-                totalDebit: 0,
-            };
-        }
-        acc[date].transactions.push(transaction);
-        if (transaction.type === 'income') {
-            acc[date].totalCredit += transaction.amount;
-        } else {
-            acc[date].totalDebit += transaction.amount;
-        }
-        return acc;
-    }, {} as Record<string, { transactions: Transaction[], totalCredit: number, totalDebit: number }>);
-  }, [sortedTransactions]);
-
-  const groupedTransactionsByMonth = React.useMemo(() => {
-    return sortedTransactions.reduce((acc, transaction) => {
-        const month = new Date(transaction.date).toLocaleString('en-IN', { month: 'long', year: 'numeric' });
-        if (!acc[month]) {
-            acc[month] = {
-                transactions: [],
-                totalCredit: 0,
-                totalDebit: 0,
-            };
-        }
-        acc[month].transactions.push(transaction);
-        if (transaction.type === 'income') {
-            acc[month].totalCredit += transaction.amount;
-        } else {
-            acc[month].totalDebit += transaction.amount;
-        }
-        return acc;
-    }, {} as Record<string, { transactions: Transaction[], totalCredit: number, totalDebit: number }>);
-  }, [sortedTransactions]);
-
 
   const renderTransactionAccordion = (
-      groupedData: Record<string, { transactions: Transaction[], totalCredit: number, totalDebit: number }>,
+      groupedData: GroupedData,
       groupBy: "day" | "month"
     ) => {
       if (Object.keys(groupedData).length === 0) {
         return <div className="text-center text-muted-foreground py-10">No transactions yet. Start by adding some income or expenses.</div>;
       }
+      
+      let sortedGroupKeys = Object.keys(groupedData);
+
+      if (sort === 'saved-desc') {
+        sortedGroupKeys.sort((a, b) => {
+          const netA = groupedData[a].totalCredit - groupedData[a].totalDebit;
+          const netB = groupedData[b].totalCredit - groupedData[b].totalDebit;
+          return netB - netA;
+        });
+      } else if (sort === 'saved-asc') {
+         sortedGroupKeys.sort((a, b) => {
+          const netA = groupedData[a].totalCredit - groupedData[a].totalDebit;
+          const netB = groupedData[b].totalCredit - groupedData[b].totalDebit;
+          return netA - netB;
+        });
+      }
   
       return (
         <Accordion type="single" collapsible className="w-full">
-          {Object.entries(groupedData).map(([groupKey, { transactions: dailyTransactions, totalCredit, totalDebit }], index) => {
+          {sortedGroupKeys.map((groupKey, index) => {
+            const { transactions: dailyTransactions, totalCredit, totalDebit } = groupedData[groupKey];
             const netAmount = totalCredit - totalDebit;
             const isSavings = netAmount >= 0;
 
@@ -299,7 +286,7 @@ export function HistoryClient() {
         </div>
       );
     }
-    if (sortedTransactions.length === 0) {
+    if (allTransactions.length === 0) {
       return (
         <div className="text-center text-muted-foreground py-10">No transactions yet. Start by adding some income or expenses.</div>
       );
@@ -341,11 +328,8 @@ export function HistoryClient() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="date-desc">Date: Newest to Oldest</SelectItem>
-                <SelectItem value="date-asc">Date: Oldest to Newest</SelectItem>
-                <SelectItem value="income-desc">Income: High to Low</SelectItem>
-                <SelectItem value="income-asc">Income: Low to High</SelectItem>
-                <SelectItem value="expense-desc">Expense: High to Low</SelectItem>
-                <SelectItem value="expense-asc">Expense: Low to High</SelectItem>
+                <SelectItem value="saved-desc">Saved: High to Low</SelectItem>
+                <SelectItem value="saved-asc">Overspent: High to Low</SelectItem>
               </SelectContent>
             </Select>
             <Button
@@ -373,5 +357,3 @@ export function HistoryClient() {
      </div>
   );
 }
-
-    
