@@ -99,7 +99,7 @@ export function DashboardClient() {
 
   return (
     <>
-      <div className="flex-1 flex flex-col bg-background">
+      <div className="flex-1 flex flex-col bg-background container mx-auto">
         <DashboardHeader
           onSetBudget={() => setSetBudgetOpen(true)}
           onAddExpense={() => setAddExpenseOpen(true)}

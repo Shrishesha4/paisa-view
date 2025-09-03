@@ -7,7 +7,6 @@ import type { Expense } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { capitalize, cn } from "@/lib/utils";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { getCategoryIcon } from "@/lib/constants";
 import { Button } from "./ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -45,10 +44,9 @@ export function CategoryClient({ categoryName }: CategoryClientProps) {
   const Icon = getCategoryIcon(categoryName);
 
   return (
-    <div className="flex-1 flex flex-col bg-background p-4 md:p-6">
+    <div className="flex-1 flex flex-col bg-background p-4 md:p-6 container mx-auto">
       <header className="mb-4 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <SidebarTrigger className="md:hidden" />
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ArrowLeft />
           </Button>

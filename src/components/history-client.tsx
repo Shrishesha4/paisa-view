@@ -9,7 +9,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn, capitalize } from "@/lib/utils";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "./ui/button";
 import { Sparkles, Loader2, ArrowUpDown } from "lucide-react";
@@ -309,10 +308,9 @@ export function HistoryClient() {
   }
 
   return (
-     <div className="flex-1 flex flex-col bg-background p-4 md:p-6">
+     <div className="flex-1 flex flex-col bg-background p-4 md:p-6 container mx-auto">
         <header className="mb-4 flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
-            <SidebarTrigger className="md:hidden" />
             <div>
               <h1 className="text-2xl md:text-3xl font-bold">Transaction History</h1>
               <p className="text-muted-foreground">A detailed log of all your income and expenses.</p>

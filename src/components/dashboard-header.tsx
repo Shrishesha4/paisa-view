@@ -2,7 +2,6 @@
 "use client";
 
 import * as React from "react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Settings, Download, Upload, Landmark, PlusCircle } from "lucide-react";
@@ -25,7 +24,6 @@ export function DashboardHeader({ onSetBudget, onAddExpense, onAddIncome, onExpo
   return (
     <div className="flex items-center justify-between p-4 md:p-6">
       <div className="flex items-center gap-2">
-         <SidebarTrigger className="md:hidden" />
          <h1 className="text-2xl md:text-3xl font-bold">Dashboard</h1>
       </div>
        <div className="flex items-center gap-2">
