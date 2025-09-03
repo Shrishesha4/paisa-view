@@ -33,7 +33,6 @@ const KEYWORD_TO_CATEGORY_MAP: Record<string, string> = {
   gift: 'Gifts',
   mango: 'Groceries',
   leaves: 'Groceries', // Assuming leaves are for cooking/groceries
-  thebashesha: 'Other', // A placeholder, can be refined
 };
 
 /**
@@ -118,7 +117,7 @@ class CategorizationModel {
    * Extracts, normalizes, and corrects meaningful keywords from a description string.
    */
   private extractKeywords(description: string): string[] {
-    const stopWords = new Set(['and', 'the', 'for', 'a', 'in', 'with', 'to', 'of', 'from', '-']);
+    const stopWords = new Set(['and', 'the', 'for', 'a', 'in', 'with', 'to', 'of', 'from', '-', 'thebashesha']);
     return description
       .toLowerCase()
       .split(/\s+/)
