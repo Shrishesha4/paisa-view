@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
+  DialogClose,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -62,7 +63,7 @@ export function AddExpenseDialog({ isOpen, onClose, onAddExpense }: AddExpenseDi
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add New Expense</DialogTitle>
           <DialogDescription>
@@ -124,7 +125,9 @@ export function AddExpenseDialog({ isOpen, onClose, onAddExpense }: AddExpenseDi
               )}
             />
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+              <DialogClose asChild>
+                <Button type="button" variant="outline">Cancel</Button>
+              </DialogClose>
               <Button type="submit">Add Expense</Button>
             </DialogFooter>
           </form>

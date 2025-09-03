@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
+  DialogClose,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -56,7 +57,7 @@ export function SetBudgetDialog({ isOpen, onClose, onSetBudget, currentBudget }:
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Set Monthly Budget</DialogTitle>
           <DialogDescription>
@@ -79,7 +80,9 @@ export function SetBudgetDialog({ isOpen, onClose, onSetBudget, currentBudget }:
               )}
             />
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+              <DialogClose asChild>
+                <Button type="button" variant="outline">Cancel</Button>
+              </DialogClose>
               <Button type="submit">Save Budget</Button>
             </DialogFooter>
           </form>
