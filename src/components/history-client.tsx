@@ -51,13 +51,8 @@ export function HistoryClient() {
     ];
 
     return combined.sort((a, b) => {
-      let comparison = 0;
-      if (sortBy === 'date') {
-        comparison = new Date(b.date).getTime() - new Date(a.date).getTime();
-      } else if (sortBy === 'amount') {
-        comparison = b.amount - a.amount;
-      }
-      return sortOrder === 'asc' ? -comparison : comparison;
+        let comparison = new Date(b.date).getTime() - new Date(a.date).getTime();
+        return sortOrder === 'asc' && sortBy === 'date' ? -comparison : comparison;
     });
   }, [income, expenses, sortBy, sortOrder]);
 
@@ -165,6 +160,15 @@ export function HistoryClient() {
           {Object.entries(groupedData).map(([groupKey, { transactions: dailyTransactions, totalCredit, totalDebit }], index) => {
             const netAmount = totalCredit - totalDebit;
             const isSavings = netAmount >= 0;
+
+            const sortedDailyTransactions = [...dailyTransactions].sort((a,b) => {
+                if (sortBy === 'amount') {
+                    const comparison = b.amount - a.amount;
+                    return sortOrder === 'asc' ? -comparison : comparison;
+                }
+                return 0; // default date sort is handled by `transactions` memo
+            });
+
             return (
               <AccordionItem value={`item-${index}`} key={groupKey}>
                 <AccordionTrigger>
@@ -196,7 +200,7 @@ export function HistoryClient() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {dailyTransactions.map((transaction, index) => (
+                      {sortedDailyTransactions.map((transaction, index) => (
                         <React.Fragment key={transaction.id}>
                           {/* Mobile Row */}
                           <TableRow className="md:hidden border-b">
@@ -216,7 +220,7 @@ export function HistoryClient() {
   
                           {/* Desktop Row */}
                           <TableRow className="hidden md:table-row">
-                            <TableCell>{dailyTransactions.length - index}</TableCell>
+                            <TableCell>{sortedDailyTransactions.length - index}</TableCell>
                             <TableCell>{groupBy === 'day' ? formatTime(transaction.date) : formatDate(transaction.date)}</TableCell>
                             <TableCell className="font-medium">{transaction.description}</TableCell>
                             <TableCell className={cn("text-right font-semibold", 'text-success')}>
@@ -354,3 +358,5 @@ export function HistoryClient() {
      </div>
   );
 }
+
+    
