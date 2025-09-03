@@ -22,9 +22,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import type { Expense } from "@/lib/types";
+import { capitalize } from "@/lib/utils";
 
 const formSchema = z.object({
-  description: z.string().min(1, "Description is required"),
+  description: z.string(),
   amount: z.coerce.number().min(0.01, "Amount must be positive"),
   category: z.string().min(1, "Category is required"),
   date: z.string().refine((date) => !isNaN(Date.parse(date)), {
@@ -50,7 +51,11 @@ export function AddExpenseDialog({ isOpen, onClose, onAddExpense }: AddExpenseDi
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    onAddExpense(values);
+    onAddExpense({
+        ...values,
+        description: values.description || 'N/A',
+        category: capitalize(values.category),
+    });
     form.reset();
     onClose();
   }
@@ -71,7 +76,7 @@ export function AddExpenseDialog({ isOpen, onClose, onAddExpense }: AddExpenseDi
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>Description (Optional)</FormLabel>
                   <FormControl>
                     <Input placeholder="e.g., Coffee with friends" {...field} />
                   </FormControl>
