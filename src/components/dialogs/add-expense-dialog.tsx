@@ -24,6 +24,10 @@ import {
 import { Input } from "@/components/ui/input";
 import type { Expense } from "@/lib/types";
 import { capitalize } from "@/lib/utils";
+import React, { useCallback, useEffect, useState } from "react";
+import { getCategorySuggestion } from "@/app/actions";
+import { Loader2 } from "lucide-react";
+import { useLocalStorage } from "@/hooks/use-local-storage";
 
 const formSchema = z.object({
   description: z.string(),
@@ -41,6 +45,24 @@ type AddExpenseDialogProps = {
 };
 
 export function AddExpenseDialog({ isOpen, onClose, onAddExpense }: AddExpenseDialogProps) {
+  const [expenses] = useLocalStorage<Expense[]>("expenses", []);
+  const [isSuggesting, setIsSuggesting] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsOnline(navigator.onLine);
+      const handleOnline = () => setIsOnline(true);
+      const handleOffline = () => setIsOnline(false);
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }
+  }, []);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -51,18 +73,55 @@ export function AddExpenseDialog({ isOpen, onClose, onAddExpense }: AddExpenseDi
     },
   });
 
+  const fetchSuggestion = useCallback(async (description: string) => {
+    if (description && isOnline) {
+      setIsSuggesting(true);
+      const existingCategories = [...new Set(expenses.map(e => capitalize(e.category)))];
+      const result = await getCategorySuggestion(description, existingCategories);
+      if (result.success && result.data) {
+        form.setValue("category", result.data, { shouldValidate: true });
+      }
+      setIsSuggesting(false);
+    }
+  }, [expenses, form, isOnline]);
+
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'description') {
+        const timer = setTimeout(() => fetchSuggestion(value.description || ''), 500);
+        return () => clearTimeout(timer);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, fetchSuggestion]);
+
   function onSubmit(values: z.infer<typeof formSchema>) {
     onAddExpense({
         ...values,
         description: values.description || 'N/A',
         category: capitalize(values.category),
     });
-    form.reset();
+    form.reset({
+      description: "",
+      amount: 0,
+      category: "",
+      date: new Date().toISOString().split("T")[0],
+    });
     onClose();
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) {
+        form.reset({
+          description: "",
+          amount: 0,
+          category: "",
+          date: new Date().toISOString().split("T")[0],
+        });
+      }
+      onClose();
+    }}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Add New Expense</DialogTitle>
@@ -105,7 +164,14 @@ export function AddExpenseDialog({ isOpen, onClose, onAddExpense }: AddExpenseDi
                 <FormItem>
                   <FormLabel>Category</FormLabel>
                    <FormControl>
-                    <Input placeholder="e.g., Food" {...field} />
+                    <div className="relative">
+                      <Input placeholder="e.g., Food" {...field} />
+                      {isSuggesting && (
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

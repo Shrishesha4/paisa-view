@@ -1,6 +1,7 @@
 'use server';
 
 import { suggestSavings } from '@/ai/flows/suggestSavings';
+import { categorizeExpense } from '@/ai/flows/categorizeExpense';
 import type { Expense, Income } from '@/lib/types';
 
 export async function getSavingsSuggestions(expenses: Expense[], income: Income[]) {
@@ -21,4 +22,14 @@ export async function getSavingsSuggestions(expenses: Expense[], income: Income[
     console.error('Error getting savings suggestions:', error);
     return { success: false, error: 'Failed to get suggestions. Please try again.' };
   }
+}
+
+export async function getCategorySuggestion(description: string, existingCategories: string[]) {
+    try {
+        const suggestion = await categorizeExpense({ description, existingCategories });
+        return { success: true, data: suggestion };
+    } catch (error) {
+        console.error('Error getting category suggestion:', error);
+        return { success: false, error: 'Failed to get category suggestion.' };
+    }
 }
