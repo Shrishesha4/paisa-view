@@ -51,15 +51,28 @@ export function HistoryClient() {
     ];
 
     return combined.sort((a, b) => {
-      let comparison = 0;
-      if (sortBy === 'date') {
-        comparison = new Date(b.date).getTime() - new Date(a.date).getTime();
-      } else if (sortBy === 'amount') {
-        comparison = b.amount - a.amount;
-      } else { // Default sort by date desc
-        comparison = new Date(b.date).getTime() - new Date(a.date).getTime();
-      }
-      return sortOrder === 'asc' ? -comparison : comparison;
+        const dateComparison = new Date(b.date).getTime() - new Date(a.date).getTime();
+
+        if (sortBy === 'income') {
+            if (a.type === 'income' && b.type === 'income') {
+                const amountComparison = a.amount - b.amount;
+                return sortOrder === 'asc' ? amountComparison : -amountComparison;
+            }
+        }
+        
+        if (sortBy === 'expense') {
+            if (a.type === 'expense' && b.type === 'expense') {
+                const amountComparison = a.amount - b.amount;
+                return sortOrder === 'asc' ? amountComparison : -amountComparison;
+            }
+        }
+        
+        if (sortBy === 'date') {
+            return sortOrder === 'asc' ? -dateComparison : dateComparison;
+        }
+
+        // Default sort by date desc
+        return dateComparison;
     });
   }, [income, expenses, sortBy, sortOrder]);
 
@@ -69,7 +82,7 @@ export function HistoryClient() {
         let comparison = 0;
         if (sortBy === 'date') {
             comparison = new Date(b.date).getTime() - new Date(a.date).getTime();
-        } else if (sortBy === 'amount') {
+        } else if (sortBy === 'amount' || sortBy === 'income') {
             comparison = b.amount - a.amount;
         }
         return sortOrder === 'asc' ? -comparison : comparison;
@@ -322,15 +335,17 @@ export function HistoryClient() {
           </div>
           <div className="flex items-center gap-2">
             <Select onValueChange={handleSortChange} defaultValue={sort}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[220px]">
                 <ArrowUpDown className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="date-desc">Date: Newest</SelectItem>
-                <SelectItem value="date-asc">Date: Oldest</SelectItem>
-                <SelectItem value="amount-desc">Amount: High-Low</SelectItem>
-                <SelectItem value="amount-asc">Amount: Low-High</SelectItem>
+                <SelectItem value="date-desc">Date: Newest to Oldest</SelectItem>
+                <SelectItem value="date-asc">Date: Oldest to Newest</SelectItem>
+                <SelectItem value="income-desc">Income: High to Low</SelectItem>
+                <SelectItem value="income-asc">Income: Low to High</SelectItem>
+                <SelectItem value="expense-desc">Expense: High to Low</SelectItem>
+                <SelectItem value="expense-asc">Expense: Low to High</SelectItem>
               </SelectContent>
             </Select>
             <Button
