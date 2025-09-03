@@ -23,7 +23,7 @@ export function RecentTransactions({ isClient, expenses, income }: RecentTransac
   const transactions: Transaction[] = [
     ...income.map(i => ({ ...i, type: 'income' as const })),
     ...expenses.map(e => ({ ...e, type: 'expense' as const }))
-  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 10);
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -108,10 +108,10 @@ export function RecentTransactions({ isClient, expenses, income }: RecentTransac
   }
 
   return (
-    <Card className="col-span-1 lg:col-span-3">
+    <Card>
       <CardHeader>
         <CardTitle>Recent Transactions</CardTitle>
-        <CardDescription>Your last 10 transactions.</CardDescription>
+        <CardDescription>Your last 5 transactions.</CardDescription>
       </CardHeader>
       <CardContent>
         {renderContent()}

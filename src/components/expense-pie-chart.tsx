@@ -107,7 +107,7 @@ export function ExpensePieChart({ isClient, expenses }: ExpensePieChartProps) {
   };
 
   return (
-    <Card className="col-span-1 lg:col-span-2">
+    <Card>
       <CardHeader>
         <CardTitle>Expense Breakdown</CardTitle>
         <CardDescription>
