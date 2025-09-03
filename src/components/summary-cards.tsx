@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,7 +39,7 @@ export function SummaryCards({ isClient, totalIncome, totalExpenses, savings }: 
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-3 p-4 md:p-6">
+    <>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Income</CardTitle>
@@ -69,6 +70,6 @@ export function SummaryCards({ isClient, totalIncome, totalExpenses, savings }: 
           <p className="text-xs text-muted-foreground">Remaining after expenses</p>
         </CardContent>
       </Card>
-    </div>
+    </>
   );
 }

@@ -107,17 +107,15 @@ export function DashboardClient() {
           onExport={handleExportData}
           onImport={handleImportData}
         />
-        <main className="flex-1 overflow-y-auto pb-28">
+        <main className="flex-1 overflow-y-auto pb-28 p-4 md:p-6 grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-3">
           <SummaryCards
             isClient={isClient}
             totalIncome={totalIncome}
             totalExpenses={totalExpenses}
             savings={savings}
           />
-          <div className="grid gap-4 md:gap-6 p-4 md:p-6 grid-cols-1 lg:grid-cols-3">
-            <ExpensePieChart isClient={isClient} expenses={expenses} />
-            <RecentTransactions isClient={isClient} expenses={expenses} income={income} />
-          </div>
+          <ExpensePieChart isClient={isClient} expenses={expenses} />
+          <RecentTransactions isClient={isClient} expenses={expenses} income={income} />
         </main>
       </div>
 
