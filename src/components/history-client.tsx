@@ -51,8 +51,13 @@ export function HistoryClient() {
     ];
 
     return combined.sort((a, b) => {
-        let comparison = new Date(b.date).getTime() - new Date(a.date).getTime();
-        return sortOrder === 'asc' && sortBy === 'date' ? -comparison : comparison;
+      let comparison = 0;
+      if (sortBy === 'date') {
+        comparison = new Date(b.date).getTime() - new Date(a.date).getTime();
+        return sortOrder === 'asc' ? -comparison : comparison;
+      }
+      // Default sort by date desc if no sort or amount sort is selected
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
     });
   }, [income, expenses, sortBy, sortOrder]);
 
@@ -66,7 +71,7 @@ export function HistoryClient() {
         }
         return sortOrder === 'asc' ? -comparison : comparison;
     });
-}, [income, sortBy, sortOrder]);
+  }, [income, sortBy, sortOrder]);
 
   const handleBatchCategorize = () => {
     setIsCategorizing(true);
@@ -87,7 +92,7 @@ export function HistoryClient() {
     } finally {
       setIsCategorizing(false);
     }
-};
+  };
   
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -161,12 +166,13 @@ export function HistoryClient() {
             const netAmount = totalCredit - totalDebit;
             const isSavings = netAmount >= 0;
 
-            const sortedDailyTransactions = [...dailyTransactions].sort((a,b) => {
-                if (sortBy === 'amount') {
-                    const comparison = b.amount - a.amount;
-                    return sortOrder === 'asc' ? -comparison : comparison;
-                }
-                return 0; // default date sort is handled by `transactions` memo
+            const sortedDailyTransactions = [...dailyTransactions].sort((a, b) => {
+              if (sortBy === 'amount') {
+                const comparison = b.amount - a.amount;
+                return sortOrder === 'asc' ? -comparison : comparison;
+              }
+              // Fallback to time sort if not sorting by amount
+              return new Date(b.date).getTime() - new Date(a.date).getTime();
             });
 
             return (
@@ -358,5 +364,3 @@ export function HistoryClient() {
      </div>
   );
 }
-
-    
