@@ -56,15 +56,15 @@ export function SetBudgetDialog({ isOpen, onClose, onSetBudget, currentBudget }:
     onClose();
   }
   
-  const handleDialogClose = () => {
-    form.reset({
-      amount: currentBudget.amount || 0,
-    });
-    onClose();
+  const handleDialogChange = (open: boolean) => {
+    if (!open) {
+      form.reset({ amount: currentBudget.amount || 0 });
+      onClose();
+    }
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleDialogClose()} dismissible={false}>
+    <Dialog open={isOpen} onOpenChange={handleDialogChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Set Monthly Budget</DialogTitle>
