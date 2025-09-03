@@ -18,7 +18,7 @@ export function Navbar() {
     <>
       {/* Desktop Navbar */}
       <header className="fixed top-0 left-0 right-0 z-50 hidden md:block">
-        <nav className="container mx-auto flex items-center justify-between p-4 bg-background/80 backdrop-blur-sm border-b border-border/50 rounded-b-lg">
+        <nav className="container mx-auto flex items-center justify-between p-4 bg-background/80 backdrop-blur-sm border-b border-border/50">
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <Wallet className="h-5 w-5 text-primary-foreground" />
@@ -43,8 +43,8 @@ export function Navbar() {
       </header>
       
       {/* Mobile Bottom Navbar */}
-      <footer className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-border/50 bg-background/80 backdrop-blur-sm">
-         <nav className="container mx-auto flex items-center justify-around p-2">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-border/50 bg-background/80 backdrop-blur-sm">
+         <div className="container mx-auto flex items-center justify-around p-2">
             {navItems.map((item) => (
                 <Link
                     key={item.href}
@@ -58,9 +58,8 @@ export function Navbar() {
                     <span className="text-xs font-medium">{item.label}</span>
                 </Link>
             ))}
-         </nav>
-      </footer>
-       <div className="pb-20 md:pb-0"></div>
+         </div>
+      </nav>
     </>
   );
 }
