@@ -48,7 +48,7 @@ const categorizeExpensePrompt = ai.definePrompt({
       {{/each}}
 
       If none of the existing categories match well, choose one from this list: Food, Transport, Shopping, Utilities, Entertainment, Health, Rent, Other.
-      If the description is empty or not descriptive enough, respond with "Other".
+      If the description is empty, not descriptive enough, or you cannot determine a clear category, respond with "Other".
       Respond with only the category name.
     `,
 });
