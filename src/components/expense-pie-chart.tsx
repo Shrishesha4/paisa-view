@@ -93,8 +93,9 @@ export function ExpensePieChart({ isClient, expenses }: ExpensePieChartProps) {
           </Pie>
           <Tooltip
             contentStyle={{
-              backgroundColor: "hsl(var(--background))",
+              background: "hsl(var(--card))",
               borderColor: "hsl(var(--border))",
+              color: "hsl(var(--card-foreground))",
             }}
             formatter={(value) =>
               new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(value as number)
