@@ -44,8 +44,8 @@ export function HistoryClient() {
     router.replace(`${pathname}?${params.toString()}`);
   }
 
-  const transactions: Transaction[] = React.useMemo(() => {
-    const combined = [
+  const sortedTransactions: Transaction[] = React.useMemo(() => {
+    const combined: Transaction[] = [
       ...income.map(i => ({ ...i, type: 'income' as const })),
       ...expenses.map(e => ({ ...e, category: capitalize(e.category), type: 'expense' as const }))
     ];
@@ -54,12 +54,15 @@ export function HistoryClient() {
       let comparison = 0;
       if (sortBy === 'date') {
         comparison = new Date(b.date).getTime() - new Date(a.date).getTime();
-        return sortOrder === 'asc' ? -comparison : comparison;
+      } else if (sortBy === 'amount') {
+        comparison = b.amount - a.amount;
+      } else { // Default sort by date desc
+        comparison = new Date(b.date).getTime() - new Date(a.date).getTime();
       }
-      // Default sort by date desc if no sort or amount sort is selected
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
+      return sortOrder === 'asc' ? -comparison : comparison;
     });
   }, [income, expenses, sortBy, sortOrder]);
+
 
   const sortedIncome: Income[] = React.useMemo(() => {
     return [...income].sort((a, b) => {
@@ -112,7 +115,7 @@ export function HistoryClient() {
   }
 
   const groupedTransactionsByDay = React.useMemo(() => {
-    return transactions.reduce((acc, transaction) => {
+    return sortedTransactions.reduce((acc, transaction) => {
         const date = formatDate(transaction.date);
         if (!acc[date]) {
             acc[date] = {
@@ -129,10 +132,10 @@ export function HistoryClient() {
         }
         return acc;
     }, {} as Record<string, { transactions: Transaction[], totalCredit: number, totalDebit: number }>);
-  }, [transactions]);
+  }, [sortedTransactions]);
 
   const groupedTransactionsByMonth = React.useMemo(() => {
-    return transactions.reduce((acc, transaction) => {
+    return sortedTransactions.reduce((acc, transaction) => {
         const month = new Date(transaction.date).toLocaleString('en-IN', { month: 'long', year: 'numeric' });
         if (!acc[month]) {
             acc[month] = {
@@ -149,7 +152,7 @@ export function HistoryClient() {
         }
         return acc;
     }, {} as Record<string, { transactions: Transaction[], totalCredit: number, totalDebit: number }>);
-  }, [transactions]);
+  }, [sortedTransactions]);
 
 
   const renderTransactionAccordion = (
@@ -165,15 +168,6 @@ export function HistoryClient() {
           {Object.entries(groupedData).map(([groupKey, { transactions: dailyTransactions, totalCredit, totalDebit }], index) => {
             const netAmount = totalCredit - totalDebit;
             const isSavings = netAmount >= 0;
-
-            const sortedDailyTransactions = [...dailyTransactions].sort((a, b) => {
-              if (sortBy === 'amount') {
-                const comparison = b.amount - a.amount;
-                return sortOrder === 'asc' ? -comparison : comparison;
-              }
-              // Fallback to time sort if not sorting by amount
-              return new Date(b.date).getTime() - new Date(a.date).getTime();
-            });
 
             return (
               <AccordionItem value={`item-${index}`} key={groupKey}>
@@ -206,7 +200,7 @@ export function HistoryClient() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {sortedDailyTransactions.map((transaction, index) => (
+                      {dailyTransactions.map((transaction, index) => (
                         <React.Fragment key={transaction.id}>
                           {/* Mobile Row */}
                           <TableRow className="md:hidden border-b">
@@ -226,7 +220,7 @@ export function HistoryClient() {
   
                           {/* Desktop Row */}
                           <TableRow className="hidden md:table-row">
-                            <TableCell>{sortedDailyTransactions.length - index}</TableCell>
+                            <TableCell>{dailyTransactions.length - index}</TableCell>
                             <TableCell>{groupBy === 'day' ? formatTime(transaction.date) : formatDate(transaction.date)}</TableCell>
                             <TableCell className="font-medium">{transaction.description}</TableCell>
                             <TableCell className={cn("text-right font-semibold", 'text-success')}>
@@ -292,7 +286,7 @@ export function HistoryClient() {
         </div>
       );
     }
-    if (transactions.length === 0) {
+    if (sortedTransactions.length === 0) {
       return (
         <div className="text-center text-muted-foreground py-10">No transactions yet. Start by adding some income or expenses.</div>
       );
@@ -364,3 +358,5 @@ export function HistoryClient() {
      </div>
   );
 }
+
+    
