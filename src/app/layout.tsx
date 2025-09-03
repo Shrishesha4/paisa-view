@@ -5,7 +5,9 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ServiceWorkerRegistrar } from "@/components/service-worker-registrar";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider } from "@/lib/auth-context";
 import { Navbar } from "@/components/navbar";
+import { HouseholdNotificationProvider } from "@/components/household-notification-provider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -35,12 +37,16 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
         >
-          <Navbar />
-          <main className="pt-20 pb-24 md:pb-4">
-            {children}
-          </main>
-          <Toaster />
-          <ServiceWorkerRegistrar />
+          <AuthProvider>
+            <HouseholdNotificationProvider>
+              <Navbar />
+              <main className="pt-20 pb-24 md:pb-4">
+                {children}
+              </main>
+              <Toaster />
+              <ServiceWorkerRegistrar />
+            </HouseholdNotificationProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

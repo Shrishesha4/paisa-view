@@ -90,7 +90,7 @@ export function AddExpenseDialog({ isOpen, onClose, onAddExpense }: AddExpenseDi
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
+    <Dialog open={isOpen} onOpenChange={(open: boolean) => {
       if (!open) {
         form.reset({
           description: "",

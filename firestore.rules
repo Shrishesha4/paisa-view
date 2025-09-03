@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isHouseholdMember(householdId) {
+      return request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.members;
+    }
+    
+    function isHouseholdAdmin(householdId) {
+      return request.auth.uid == get(/databases/$(database)/documents/households/$(householdId)).data.adminId;
+    }
+
+    // User data rules - allow all operations for authenticated users
+    match /users/{userId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Household rules - allow all operations for authenticated users
+    match /households/{householdId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    // Allow access to all collections for authenticated users
+    match /{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}

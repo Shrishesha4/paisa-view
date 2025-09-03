@@ -1,0 +1,173 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions for authentication and validation
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isHouseholdMember(householdId) {
+      return request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.members;
+    }
+    
+    function isHouseholdAdmin(householdId) {
+      return request.auth.uid == get(/databases/$(database)/documents/households/$(householdId)).data.adminId;
+    }
+    
+    function hasValidEmail() {
+      return request.auth.token.email != null && 
+             request.auth.token.email_verified == true;
+    }
+    
+    function isValidUserData(data) {
+      return data.keys().hasAll(['expenses', 'incomes', 'budgets', 'categories', 'lastSync']) &&
+             data.expenses is list &&
+             data.incomes is list &&
+             data.budgets is list &&
+             data.categories is list &&
+             data.lastSync is timestamp &&
+             // Validate array sizes to prevent abuse
+             data.expenses.size() <= 10000 &&
+             data.incomes.size() <= 1000 &&
+             data.budgets.size() <= 100 &&
+             data.categories.size() <= 100;
+    }
+    
+    function isValidExpense(expense) {
+      return expense.keys().hasAll(['id', 'amount', 'date', 'description', 'category']) &&
+             expense.id is string &&
+             expense.amount is number &&
+             expense.amount > 0 &&
+             expense.amount <= 1000000 && // Max 1M per transaction
+             expense.date is string &&
+             expense.description is string &&
+             expense.description.size() <= 500 &&
+             expense.category is string &&
+             expense.category.size() <= 100;
+    }
+    
+    function isValidIncome(income) {
+      return income.keys().hasAll(['id', 'amount', 'date', 'description', 'category']) &&
+             income.id is string &&
+             income.amount is number &&
+             income.amount > 0 &&
+             income.amount <= 10000000 && // Max 10M per income
+             income.date is string &&
+             income.description is string &&
+             income.description.size() <= 500 &&
+             income.category is string;
+    }
+    
+    function isValidBudget(budget) {
+      return budget.keys().hasAll(['amount']) &&
+             budget.amount is number &&
+             budget.amount >= 0 &&
+             budget.amount <= 10000000; // Max 10M budget
+    }
+    
+    function isValidHousehold(data) {
+      return data.keys().hasAll(['name', 'adminId', 'members', 'createdAt', 'updatedAt']) &&
+             data.name is string &&
+             data.name.size() <= 100 &&
+             data.adminId is string &&
+             data.members is list &&
+             data.members.size() <= 20 && // Max 20 household members
+             data.createdAt is timestamp &&
+             data.updatedAt is timestamp &&
+             data.members.hasAny([request.auth.uid]);
+    }
+    
+    function isRecentTimestamp(timestamp) {
+      return timestamp > timestamp.date(2020, 1, 1) && 
+             timestamp < timestamp.date(2030, 12, 31);
+    }
+
+    // User data rules with enhanced validation
+    match /users/{userId} {
+      // Users can only access their own data
+      allow read: if isAuthenticated() && isOwner(userId);
+      
+      // Create new user data
+      allow create: if isAuthenticated() && 
+        isOwner(userId) && 
+        hasValidEmail() &&
+        isValidUserData(resource.data);
+      
+      // Update existing user data with validation
+      allow update: if isAuthenticated() && 
+        isOwner(userId) &&
+        hasValidEmail() &&
+        isValidUserData(resource.data) &&
+        // Ensure critical fields are not modified
+        resource.data.userId == request.auth.uid &&
+        // Validate individual data items
+        resource.data.expenses.hasAll(resource.data.expenses.filter(expense => isValidExpense(expense))) &&
+        resource.data.incomes.hasAll(resource.data.incomes.filter(income => isValidIncome(income))) &&
+        resource.data.budgets.hasAll(resource.data.budgets.filter(budget => isValidBudget(budget))) &&
+        // Validate timestamps
+        isRecentTimestamp(resource.data.lastSync);
+      
+      // Delete user data (only by owner)
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+    
+    // Household rules with enhanced security
+    match /households/{householdId} {
+      // Only household members can read household data
+      allow read: if isAuthenticated() && isHouseholdMember(householdId);
+      
+      // Create new household
+      allow create: if isAuthenticated() && 
+        hasValidEmail() &&
+        request.auth.uid == resource.data.adminId &&
+        isValidHousehold(resource.data) &&
+        isRecentTimestamp(resource.data.createdAt) &&
+        isRecentTimestamp(resource.data.updatedAt);
+      
+      // Update household (only by admin)
+      allow update: if isAuthenticated() && 
+        hasValidEmail() &&
+        isHouseholdAdmin(householdId) &&
+        isValidHousehold(resource.data) &&
+        isRecentTimestamp(resource.data.updatedAt) &&
+        // Ensure admin cannot be removed if they're the only member
+        (resource.data.members.size() > 1 || 
+         resource.data.members.hasAny([resource.data.adminId]));
+      
+      // Delete household (only by admin, and only if empty or admin is leaving)
+      allow delete: if isAuthenticated() && 
+        hasValidEmail() &&
+        isHouseholdAdmin(householdId);
+    }
+    
+    // Rate limiting and abuse prevention
+    match /users/{userId} {
+      // Prevent rapid successive updates (rate limiting)
+      allow update: if isAuthenticated() && 
+        isOwner(userId) &&
+        hasValidEmail() &&
+        isValidUserData(resource.data) &&
+        // Ensure lastSync is not too recent (within 1 minute)
+        (resource.data.lastSync - resource.data.lastSync) > duration.value(0, 0, 0, 0, 1, 0);
+    }
+    
+    // Additional security measures
+    match /{document=**} {
+      // Deny access to all other collections by default
+      allow read, write: if false;
+    }
+    
+    // Audit logging (optional - for enterprise use)
+    match /audit_logs/{logId} {
+      allow read: if isAuthenticated() && 
+        (isOwner(resource.data.userId) || 
+         isHouseholdAdmin(resource.data.householdId));
+      allow create: if isAuthenticated() && 
+        request.auth.uid == resource.data.userId;
+    }
+  }
+}

@@ -312,8 +312,8 @@ export function HistoryClient() {
   }
 
   return (
-     <div className="flex-1 flex flex-col bg-background p-4 md:p-6 container mx-auto">
-        <header className="mb-4 flex items-center justify-between gap-2 flex-wrap">
+     <div className="flex-1 flex flex-col bg-background px-4 md:px-8 py-6 md:py-8 container mx-auto">
+        <header className="mb-6 md:mb-8 flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold">Transaction History</h1>
@@ -343,13 +343,13 @@ export function HistoryClient() {
               ) : (
                 <Sparkles className="mr-2 h-4 w-4" />
               )}
-              Recategorize
+              Categorize
             </Button>
           </div>
         </header>
         <main className="flex-1">
-            <Card>
-                <CardContent className="pt-6">
+            <Card className="shadow-sm border-border/50">
+                <CardContent className="p-6 md:p-8">
                     {renderContent()}
                 </CardContent>
             </Card>

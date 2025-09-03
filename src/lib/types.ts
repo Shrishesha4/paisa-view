@@ -1,7 +1,7 @@
 export type Category = string;
 
-export const incomeCategory = 'Income';
-export type IncomeCategory = typeof incomeCategory;
+export const INCOME_CATEGORY = 'Income';
+export type IncomeCategory = typeof INCOME_CATEGORY;
 
 export interface Transaction {
   id: string;

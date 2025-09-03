@@ -13,7 +13,7 @@ import {
   CircleDollarSign,
 } from 'lucide-react';
 
-export const INCOME_CATEGORY: IncomeCategory = 'Income';
+export { INCOME_CATEGORY } from './types';
 
 const DEFAULT_CATEGORY_ICON = CircleDollarSign;
 
