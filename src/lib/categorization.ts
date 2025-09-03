@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import type { Expense } from "./types";
@@ -29,7 +30,9 @@ const KEYWORD_TO_CATEGORY_MAP: Record<string, string> = {
   coffee: 'Food',
   tea: 'Food',
   snacks: 'Food',
-  gift: 'Gifts'
+  gift: 'Gifts',
+  mango: 'Utilities',
+  leaves: 'Utilities',
 };
 
 /**
