@@ -39,19 +39,6 @@ class CategorizationModel {
   private keywordToCategory: Map<string, string> = new Map();
 
   /**
-   * Cleans and normalizes a category name.
-   * - Trims whitespace
-   * - Capitalizes the first letter
-   * - Handles simple comma-separated values by taking the first part
-   */
-  private normalizeCategory(category: string): string {
-    if (!category) return 'Other';
-    // Take the first part of a comma-separated list, trim it, and capitalize it.
-    const primaryCategory = category.split(',')[0].trim();
-    return capitalize(primaryCategory);
-  }
-
-  /**
    * Trains the model on a list of existing expenses.
    * It builds a map of keywords from descriptions to categories.
    * More specific keywords are given higher priority.
@@ -62,7 +49,7 @@ class CategorizationModel {
     for (const expense of expenses) {
       if (!expense.description || !expense.category) continue;
       
-      const category = this.normalizeCategory(expense.category);
+      const category = normalizeCategory(expense.category);
       // We don't want to learn from 'Other' as it's not a specific category.
       if (category.toLowerCase() === 'other') continue;
 
@@ -137,6 +124,19 @@ class CategorizationModel {
 }
 
 /**
+ * Cleans and normalizes a category name.
+ * - Trims whitespace
+ * - Capitalizes the first letter
+ * - Handles simple comma-separated values by taking the first part
+ */
+function normalizeCategory(category: string): string {
+    if (!category) return 'Other';
+    // Take the first part of a comma-separated list, trim it, and capitalize it.
+    const primaryCategory = category.split(',')[0].trim();
+    return capitalize(primaryCategory);
+}
+
+/**
  * Gets a category suggestion for a new expense description based on past expenses.
  * @param description The description of the new expense.
  * @param allExpenses The list of all past expenses to learn from.
@@ -164,16 +164,16 @@ export function batchRecategorize(allExpenses: Expense[]): { updatedExpenses: Ex
     const newCategorySuggestion = model.predict(expense.description);
 
     // If we have a suggestion and it's different from the original (normalized) category
-    if (newCategorySuggestion && newCategorySuggestion !== this.normalizeCategory(originalCategory)) {
+    if (newCategorySuggestion && newCategorySuggestion !== normalizeCategory(originalCategory)) {
         changedCount++;
         return { ...expense, category: newCategorySuggestion };
     }
     
     // If no new suggestion, just normalize the existing category.
-    const normalizedCategory = this.normalizeCategory(originalCategory);
-    if (normalizedCategory !== originalCategory) {
+    const normalizedOriginalCategory = normalizeCategory(originalCategory);
+    if (normalizedOriginalCategory !== originalCategory) {
       changedCount++;
-      return { ...expense, category: normalizedCategory };
+      return { ...expense, category: normalizedOriginalCategory };
     }
     
     return expense;
