@@ -3,6 +3,7 @@
 import { suggestSavings } from '@/ai/flows/suggestSavings';
 import { categorizeExpense } from '@/ai/flows/categorizeExpense';
 import type { Expense, Income } from '@/lib/types';
+import { capitalize } from '@/lib/utils';
 
 export async function getSavingsSuggestions(expenses: Expense[], income: Income[]) {
   try {
@@ -36,7 +37,7 @@ export async function getCategorySuggestion(description: string, existingCategor
 
 export async function batchCategorizeExpenses(expenses: Expense[]): Promise<{ success: boolean, data?: Expense[], error?: string }> {
     try {
-        const existingCategories = [...new Set(expenses.map(e => e.category).filter(c => c.toLowerCase() !== 'other'))];
+        const existingCategories = [...new Set(expenses.map(e => capitalize(e.category)).filter(c => c.toLowerCase() !== 'other'))];
         
         const expensesToCategorize = expenses.filter(e => {
             const description = e.description?.trim();
