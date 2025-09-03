@@ -33,3 +33,31 @@ export async function getCategorySuggestion(description: string, existingCategor
         return { success: false, error: 'Failed to get category suggestion.' };
     }
 }
+
+export async function batchCategorizeExpenses(expenses: Expense[]): Promise<{ success: boolean, data?: Expense[], error?: string }> {
+    try {
+        const existingCategories = [...new Set(expenses.map(e => e.category).filter(c => c.toLowerCase() !== 'other'))];
+        const expensesToCategorize = expenses.filter(e => e.description && e.category.toLowerCase() === 'other');
+        
+        if (expensesToCategorize.length === 0) {
+            return { success: true, data: expenses };
+        }
+
+        const categorizationPromises = expensesToCategorize.map(async (expense) => {
+            const newCategory = await categorizeExpense({ description: expense.description, existingCategories });
+            return { ...expense, category: newCategory };
+        });
+
+        const categorizedExpenses = await Promise.all(categorizationPromises);
+
+        const updatedExpenses = expenses.map(originalExpense => {
+            const categorizedVersion = categorizedExpenses.find(e => e.id === originalExpense.id);
+            return categorizedVersion || originalExpense;
+        });
+
+        return { success: true, data: updatedExpenses };
+    } catch (error) {
+        console.error('Error batch categorizing expenses:', error);
+        return { success: false, error: 'Failed to categorize expenses.' };
+    }
+}

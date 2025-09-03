@@ -8,16 +8,22 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
+import { cn, capitalize } from "@/lib/utils";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "./ui/button";
+import { Sparkles, Loader2 } from "lucide-react";
+import { batchCategorizeExpenses } from "@/app/actions";
+import { useToast } from "@/hooks/use-toast";
 
 type Transaction = (Expense | Income) & { type: 'income' | 'expense' };
 
 export function HistoryClient() {
-  const [expenses] = useLocalStorage<Expense[]>("expenses", []);
-  const [income] = useLocalStorage<Income[]>("income", []);
+  const [expenses, setExpenses] = useLocalStorage<Expense[]>("expenses", []);
+  const [income, setIncome] = useLocalStorage<Income[]>("income", []);
   const [isClient, setIsClient] = React.useState(false);
+  const [isCategorizing, setIsCategorizing] = React.useState(false);
+  const { toast } = useToast();
 
   React.useEffect(() => {
     setIsClient(true);
@@ -25,9 +31,28 @@ export function HistoryClient() {
 
   const transactions: Transaction[] = React.useMemo(() => [
     ...income.map(i => ({ ...i, type: 'income' as const })),
-    ...expenses.map(e => ({ ...e, type: 'expense' as const }))
+    ...expenses.map(e => ({ ...e, category: capitalize(e.category), type: 'expense' as const }))
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [income, expenses]);
 
+  const handleBatchCategorize = async () => {
+    setIsCategorizing(true);
+    const result = await batchCategorizeExpenses(expenses);
+    if (result.success && result.data) {
+      setExpenses(result.data);
+      toast({
+        title: "Categorization Complete",
+        description: `Successfully categorized ${result.data.filter(e => e.category !== 'Other').length - expenses.filter(e => e.category !== 'Other').length} expense(s).`,
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Categorization Failed",
+        description: result.error || "An unknown error occurred.",
+      });
+    }
+    setIsCategorizing(false);
+  };
+  
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -204,12 +229,27 @@ export function HistoryClient() {
 
   return (
      <div className="flex-1 flex flex-col bg-background p-4 md:p-6">
-        <header className="mb-4 flex items-center gap-2">
+        <header className="mb-4 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
             <SidebarTrigger className="md:hidden" />
             <div>
               <h1 className="text-2xl md:text-3xl font-bold">Transaction History</h1>
               <p className="text-muted-foreground">A detailed log of all your income and expenses.</p>
             </div>
+          </div>
+          <Button
+            onClick={handleBatchCategorize}
+            disabled={isCategorizing}
+            size="sm"
+            variant="outline"
+          >
+            {isCategorizing ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="mr-2 h-4 w-4" />
+            )}
+            Categorize with AI
+          </Button>
         </header>
         <main className="flex-1">
             <Card>
