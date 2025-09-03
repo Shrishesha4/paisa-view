@@ -15,6 +15,7 @@ import { RecentTransactions } from "./recent-transactions";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
+import { ClearDataDialog } from "./dialogs/clear-data-dialog";
 
 export function DashboardClient() {
   const { toast } = useToast();
@@ -25,6 +26,7 @@ export function DashboardClient() {
   const [isAddExpenseOpen, setAddExpenseOpen] = useState(false);
   const [isAddIncomeOpen, setAddIncomeOpen] = useState(false);
   const [isSetBudgetOpen, setSetBudgetOpen] = useState(false);
+  const [isClearDataOpen, setClearDataOpen] = useState(false);
 
   const [isClient, setIsClient] = useState(false);
   useEffect(() => {
@@ -45,6 +47,13 @@ export function DashboardClient() {
     setBudget(newBudget);
     toast({ title: "Budget Updated", description: "Your monthly budget has been set." });
   };
+
+  const handleClearAllData = () => {
+    setExpenses([]);
+    setIncome([]);
+    setBudget({ amount: 0 });
+    toast({ title: "Data Cleared", description: "All your data has been successfully deleted."});
+  }
 
   const handleExportData = () => {
     const dataToExport = {
@@ -106,6 +115,7 @@ export function DashboardClient() {
           onAddIncome={() => setAddIncomeOpen(true)}
           onExport={handleExportData}
           onImport={handleImportData}
+          onClearAllData={() => setClearDataOpen(true)}
         />
         <main className="flex-1 space-y-4 md:space-y-6">
             <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-3">
@@ -151,6 +161,11 @@ export function DashboardClient() {
         onClose={() => setSetBudgetOpen(false)}
         onSetBudget={handleSetBudget}
         currentBudget={budget}
+      />
+      <ClearDataDialog
+        isOpen={isClearDataOpen}
+        onClose={() => setClearDataOpen(false)}
+        onConfirm={handleClearAllData}
       />
     </>
   );

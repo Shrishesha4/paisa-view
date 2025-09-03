@@ -4,7 +4,7 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Settings, Download, Upload, Landmark, PlusCircle } from "lucide-react";
+import { Settings, Download, Upload, Landmark, PlusCircle, Trash2 } from "lucide-react";
 
 type DashboardHeaderProps = {
   onSetBudget: () => void;
@@ -12,9 +12,10 @@ type DashboardHeaderProps = {
   onAddIncome: () => void;
   onExport: () => void;
   onImport: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onClearAllData: () => void;
 };
 
-export function DashboardHeader({ onSetBudget, onAddExpense, onAddIncome, onExport, onImport }: DashboardHeaderProps) {
+export function DashboardHeader({ onSetBudget, onAddExpense, onAddIncome, onExport, onImport, onClearAllData }: DashboardHeaderProps) {
   const importInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleImportClick = () => {
@@ -51,6 +52,11 @@ export function DashboardHeader({ onSetBudget, onAddExpense, onAddIncome, onExpo
             <DropdownMenuItem onClick={handleImportClick}>
                 <Upload className="mr-2 h-4 w-4" />
                 <span>Import Data</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onClearAllData} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                <Trash2 className="mr-2 h-4 w-4" />
+                <span>Clear All Data</span>
             </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
