@@ -10,6 +10,19 @@ class CategorizationModel {
   private keywordToCategory: Map<string, string> = new Map();
 
   /**
+   * Cleans and normalizes a category name.
+   * - Trims whitespace
+   * - Capitalizes the first letter
+   * - Handles simple comma-separated values by taking the first part
+   */
+  private normalizeCategory(category: string): string {
+    if (!category) return 'Other';
+    // Take the first part of a comma-separated list, trim it, and capitalize it.
+    const primaryCategory = category.split(',')[0].trim();
+    return capitalize(primaryCategory);
+  }
+
+  /**
    * Trains the model on a list of existing expenses.
    * It builds a map of keywords from descriptions to categories.
    * More specific keywords are given higher priority.
@@ -20,7 +33,7 @@ class CategorizationModel {
     for (const expense of expenses) {
       if (!expense.description || !expense.category) continue;
       
-      const category = capitalize(expense.category);
+      const category = this.normalizeCategory(expense.category);
       if (category.toLowerCase() === 'other') continue;
 
       const keywords = this.extractKeywords(expense.description);
@@ -109,12 +122,21 @@ export function batchRecategorize(allExpenses: Expense[]): { updatedExpenses: Ex
 
   let changedCount = 0;
   const updatedExpenses = allExpenses.map(expense => {
-    const currentCategory = capitalize(expense.category);
+    const originalCategory = expense.category;
     const newCategorySuggestion = model.predict(expense.description);
 
-    if (newCategorySuggestion && newCategorySuggestion !== currentCategory) {
+    if (newCategorySuggestion && newCategorySuggestion !== capitalize(originalCategory.split(',')[0].trim())) {
       changedCount++;
       return { ...expense, category: newCategorySuggestion };
+    }
+    
+    // Normalize existing category even if no new suggestion is found
+    const normalizedCategory = capitalize(originalCategory.split(',')[0].trim());
+    if (normalizedCategory !== originalCategory) {
+      if (!newCategorySuggestion) { // Only count as changed if AI didn't already change it
+        changedCount++;
+      }
+      return { ...expense, category: normalizedCategory };
     }
     
     return expense;
