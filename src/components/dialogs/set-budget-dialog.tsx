@@ -45,16 +45,25 @@ export function SetBudgetDialog({ isOpen, onClose, onSetBudget, currentBudget }:
   });
 
   React.useEffect(() => {
-    form.reset({ amount: currentBudget.amount || 0 });
+    if (isOpen) {
+        form.reset({ amount: currentBudget.amount || 0 });
+    }
   }, [currentBudget, form, isOpen]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     onSetBudget(values);
     onClose();
   }
+  
+  const handleDialogClose = () => {
+    form.reset({
+      amount: currentBudget.amount || 0,
+    });
+    onClose();
+  }
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleDialogClose()}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Set Monthly Budget</DialogTitle>
@@ -77,7 +86,7 @@ export function SetBudgetDialog({ isOpen, onClose, onSetBudget, currentBudget }:
                 </FormItem>
               )}
             />
-             <DialogFooter>
+            <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="outline">Cancel</Button>
               </DialogClose>
