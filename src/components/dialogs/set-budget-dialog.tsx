@@ -44,11 +44,9 @@ export function SetBudgetDialog({ isOpen, onClose, onSetBudget, currentBudget }:
     },
   });
 
-  // useEffect to reset form when currentBudget changes
   React.useEffect(() => {
     form.reset({ amount: currentBudget.amount || 0 });
   }, [currentBudget, form, isOpen]);
-
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     onSetBudget(values);
@@ -79,7 +77,7 @@ export function SetBudgetDialog({ isOpen, onClose, onSetBudget, currentBudget }:
                 </FormItem>
               )}
             />
-            <DialogFooter>
+             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="outline">Cancel</Button>
               </DialogClose>
