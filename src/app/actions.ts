@@ -36,8 +36,10 @@ export async function getCategorySuggestion(description: string, existingCategor
 }
 
 export async function batchCategorizeExpenses(expenses: Expense[]): Promise<{ success: boolean, data?: Expense[], error?: string }> {
+    console.log('[AI Debug] Starting batch categorization...');
     try {
-        const existingCategories = [...new Set(expenses.map(e => capitalize(e.category)).filter(c => c.toLowerCase() !== 'other'))];
+        const existingCategories = [...new Set(expenses.map(e => capitalize(e.category)).filter(c => c && c.toLowerCase() !== 'other'))];
+        console.log('[AI Debug] Found existing categories:', existingCategories);
         
         const expensesToCategorize = expenses.filter(e => {
             const description = e.description?.trim();
@@ -45,25 +47,38 @@ export async function batchCategorizeExpenses(expenses: Expense[]): Promise<{ su
             return description && description !== 'N/A' && category === 'other';
         });
         
+        console.log(`[AI Debug] Found ${expensesToCategorize.length} expenses to categorize.`);
+
         if (expensesToCategorize.length === 0) {
+            console.log('[AI Debug] No expenses to categorize. Exiting.');
             return { success: true, data: expenses };
         }
 
+        console.log('[AI Debug] Expenses to be sent to AI:', expensesToCategorize.map(e => ({ id: e.id, description: e.description })));
+
         const categorizationPromises = expensesToCategorize.map(async (expense) => {
-            const newCategory = await categorizeExpense({ description: expense.description, existingCategories });
-            return { ...expense, category: newCategory };
+            try {
+                const newCategory = await categorizeExpense({ description: expense.description, existingCategories });
+                console.log(`[AI Debug] AI suggested category '${newCategory}' for description '${expense.description}'`);
+                return { ...expense, category: newCategory || 'Other' };
+            } catch (err) {
+                console.error(`[AI Debug] Error categorizing expense ID ${expense.id} ('${expense.description}'):`, err);
+                return { ...expense, category: 'Other' }; // Default to 'Other' on individual failure
+            }
         });
 
         const categorizedExpenses = await Promise.all(categorizationPromises);
+        console.log('[AI Debug] AI processing finished. All promises resolved.');
 
         const updatedExpenses = expenses.map(originalExpense => {
             const categorizedVersion = categorizedExpenses.find(e => e.id === originalExpense.id);
             return categorizedVersion || originalExpense;
         });
-
+        
+        console.log('[AI Debug] Batch categorization successful.');
         return { success: true, data: updatedExpenses };
     } catch (error) {
-        console.error('Error batch categorizing expenses:', error);
-        return { success: false, error: 'Failed to categorize expenses.' };
+        console.error('[AI Debug] A critical error occurred during batch categorization:', error);
+        return { success: false, error: 'Failed to categorize expenses due to a critical error.' };
     }
 }
