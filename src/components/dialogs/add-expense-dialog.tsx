@@ -98,8 +98,10 @@ export function AddExpenseDialog({ isOpen, onClose, onAddExpense }: AddExpenseDi
           category: "",
           date: new Date().toISOString().split("T")[0],
         });
+        onClose();
+      } else {
+        onClose();
       }
-      onClose();
     }}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
