@@ -17,6 +17,7 @@ import { batchRecategorize } from "@/lib/categorization";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { getCategoryIcon } from "@/lib/constants";
 
 type Transaction = (Expense | Income) & { type: 'income' | 'expense' };
 
@@ -60,6 +61,18 @@ export function HistoryClient() {
       return sortOrder === 'asc' ? -comparison : comparison;
     });
   }, [income, expenses, sortBy, sortOrder]);
+
+  const sortedIncome: Income[] = React.useMemo(() => {
+    return [...income].sort((a, b) => {
+        let comparison = 0;
+        if (sortBy === 'date') {
+            comparison = new Date(b.date).getTime() - new Date(a.date).getTime();
+        } else if (sortBy === 'amount') {
+            comparison = b.amount - a.amount;
+        }
+        return sortOrder === 'asc' ? -comparison : comparison;
+    });
+}, [income, sortBy, sortOrder]);
 
   const handleBatchCategorize = () => {
     setIsCategorizing(true);
@@ -226,6 +239,40 @@ export function HistoryClient() {
       );
     };
 
+  const renderIncomeList = () => {
+    if(sortedIncome.length === 0) {
+        return <div className="text-center text-muted-foreground py-10">No income recorded yet.</div>;
+    }
+
+    const Icon = getCategoryIcon("Income");
+
+    return (
+        <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Source</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {sortedIncome.map(item => (
+                    <TableRow key={item.id}>
+                        <TableCell>{formatDate(item.date)}</TableCell>
+                        <TableCell className="font-medium flex items-center gap-2">
+                          <Icon className="h-4 w-4 text-muted-foreground" />
+                          {item.description}
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-success">
+                            {formatCurrency(item.amount)}
+                        </TableCell>
+                    </TableRow>
+                ))}
+            </TableBody>
+        </Table>
+    )
+}
+
   const renderContent = () => {
     if (!isClient) {
       return (
@@ -243,15 +290,19 @@ export function HistoryClient() {
     }
     return (
         <Tabs defaultValue="daily" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="daily">Daily View</TabsTrigger>
                 <TabsTrigger value="monthly">Monthly View</TabsTrigger>
+                <TabsTrigger value="income">Income</TabsTrigger>
             </TabsList>
             <TabsContent value="daily">
                 {renderTransactionAccordion(groupedTransactionsByDay, "day")}
             </TabsContent>
             <TabsContent value="monthly">
                 {renderTransactionAccordion(groupedTransactionsByMonth, "month")}
+            </TabsContent>
+            <TabsContent value="income">
+                {renderIncomeList()}
             </TabsContent>
         </Tabs>
     );
