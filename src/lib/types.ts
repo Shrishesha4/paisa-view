@@ -19,5 +19,6 @@ export interface Income extends Transaction {
 }
 
 export interface Budget {
+  id: string;
   amount: number;
 }

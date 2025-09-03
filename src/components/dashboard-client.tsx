@@ -27,7 +27,7 @@ export function DashboardClient() {
   const { user } = useAuth();
   const [expenses, setExpenses] = useLocalStorage<Expense[]>("expenses", []);
   const [income, setIncome] = useLocalStorage<Income[]>("income", []);
-  const [budget, setBudget] = useLocalStorage<Budget>("budget", { amount: 1000 });
+  const [budget, setBudget] = useLocalStorage<Budget>("budget", { id: "default-budget", amount: 1000 });
   
   // Offline sync integration
   const { addExpenseToSync, addIncomeToSync, addBudgetToSync, triggerManualSync } = useOfflineSync();
@@ -101,7 +101,7 @@ export function DashboardClient() {
       const currentUserData = await FirestoreService.getUserData(user.uid);
       
       // Create user data object from local storage
-      const syncUserData: any = {
+      const syncUserData: Partial<UserData> = {
         expenses: expenses,
         incomes: income,
         budgets: [budget],
@@ -131,13 +131,13 @@ export function DashboardClient() {
 
       // Create a properly typed UserData object with only defined values
       const cleanSyncData: UserData = {
-        expenses: syncUserData.expenses,
-        incomes: syncUserData.incomes,
-        budgets: syncUserData.budgets,
-        categories: syncUserData.categories,
-        lastSync: syncUserData.lastSync,
-        email: syncUserData.email,
-        displayName: syncUserData.displayName,
+        expenses: syncUserData.expenses || [],
+        incomes: syncUserData.incomes || [],
+        budgets: syncUserData.budgets || [],
+        categories: syncUserData.categories || [],
+        lastSync: syncUserData.lastSync || new Date(),
+        email: syncUserData.email || '',
+        displayName: syncUserData.displayName || '',
       };
 
       // Only add household fields if they have actual values (not undefined)
@@ -192,7 +192,7 @@ export function DashboardClient() {
       // Clear local data
       setExpenses([]);
       setIncome([]);
-      setBudget({ amount: 0 });
+      setBudget({ id: "default-budget", amount: 0 });
       
       // Clear cloud data if requested and user is authenticated
       if (deleteCloudData) {
@@ -365,10 +365,15 @@ export function DashboardClient() {
           if (importedData.expenses && importedData.income && importedData.budget) {
             // Validate data structure and fix types
             const validExpenses = Array.isArray(importedData.expenses) ? importedData.expenses : [];
-            const validIncome = Array.isArray(importedData.income) ? importedData.income.map((inc: any) => ({
-              ...inc,
-              category: INCOME_CATEGORY
-            })) : [];
+                  const validIncome = Array.isArray(importedData.income) ? importedData.income.map((inc: unknown) => {
+        if (inc && typeof inc === 'object' && inc !== null) {
+          return {
+            ...(inc as Record<string, unknown>),
+            category: INCOME_CATEGORY
+          };
+        }
+        return { id: `income-${Date.now()}`, amount: 0, date: new Date().toISOString(), description: 'Imported', category: INCOME_CATEGORY };
+      }) : [];
             const validBudget = importedData.budget && typeof importedData.budget.amount === 'number' ? importedData.budget : { amount: 1000 };
             
             console.log('✅ Validated data:', {

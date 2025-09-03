@@ -52,7 +52,7 @@ export function SetBudgetDialog({ isOpen, onClose, onSetBudget, currentBudget }:
   }, [currentBudget, form, isOpen]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    onSetBudget(values);
+    onSetBudget({ id: `budget-${Date.now()}`, ...values });
     onClose();
   }
   

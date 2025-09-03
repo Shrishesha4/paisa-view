@@ -24,7 +24,8 @@ import {
   ChevronDown,
   ChevronRight,
   MoreHorizontal,
-  User
+  User,
+  Plus
 } from "lucide-react";
 import { FirestoreService, UserData, Household } from "@/lib/firestore";
 import { useToast } from "@/hooks/use-toast";
@@ -47,6 +48,10 @@ export default function HouseholdPage() {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [isDebugExpanded, setIsDebugExpanded] = useState(false);
   const [isActionsExpanded, setIsActionsExpanded] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showJoinDialog, setShowJoinDialog] = useState(false);
+  const [householdName, setHouseholdName] = useState('');
+  const [joinHouseholdName, setJoinHouseholdName] = useState('');
   
   // Calculated values
   const totalSavings = totalIncome - totalExpenses;
@@ -312,6 +317,84 @@ export default function HouseholdPage() {
     }
   };
 
+  const handleCreateHousehold = async () => {
+    if (!user || !householdName.trim()) return;
+    
+    setLoading(true);
+    try {
+      await FirestoreService.createHousehold(
+        householdName.trim(), 
+        user.uid, 
+        user.email || undefined, 
+        user.displayName || undefined
+      );
+      
+      toast({
+        title: "Household Created!",
+        description: "Your household has been created successfully. You are now the admin.",
+      });
+      
+      setShowCreateDialog(false);
+      setHouseholdName('');
+      
+      // Reload household data
+      await loadHouseholdData();
+    } catch (error: any) {
+      console.error('Error creating household:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create household. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleJoinHousehold = async () => {
+    if (!user || !joinHouseholdName.trim()) return;
+    
+    setLoading(true);
+    try {
+      // First find the household by name
+      const householdId = await FirestoreService.findHouseholdByName(joinHouseholdName.trim());
+      
+      if (!householdId) {
+        toast({
+          title: "Household Not Found",
+          description: "No household found with that name. Please check the name and try again.",
+          variant: "destructive",
+      });
+        return;
+      }
+      
+      // Send join request
+      await FirestoreService.sendJoinRequest(
+        householdId, 
+        user.uid, 
+        user.email || '', 
+        user.displayName || undefined
+      );
+      
+      toast({
+        title: "Join Request Sent!",
+        description: "Your request has been sent to the household admin. You'll be notified when it's approved or rejected.",
+      });
+      
+      setShowJoinDialog(false);
+      setJoinHouseholdName('');
+    } catch (error: any) {
+      console.error('Error sending join request:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send join request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
 
   // Check if user is not authenticated (guest user)
@@ -478,16 +561,62 @@ export default function HouseholdPage() {
   if (!userData?.householdId) {
     return (
       <div className="flex-1 flex flex-col bg-background px-4 md:px-8 py-6 md:py-8 container mx-auto">
-        <div className="text-center space-y-4">
-          <Users className="mx-auto h-16 w-16 text-muted-foreground" />
-          <h1 className="text-2xl font-bold">No Household Found</h1>
-          <p className="text-muted-foreground">
-            You're not part of any household yet.
-          </p>
-          <Button onClick={() => router.push('/')}>
-            <Home className="mr-2 h-4 w-4" />
-            Go to Dashboard
-          </Button>
+        <div className="max-w-2xl mx-auto text-center space-y-8">
+          <div className="space-y-4">
+            <Users className="mx-auto h-24 w-24 text-primary" />
+            <h1 className="text-3xl font-bold">Join or Create a Household</h1>
+            <p className="text-xl text-muted-foreground">
+              Collaborate with family members to track expenses, manage budgets, and achieve financial goals together.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Create Household Card */}
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow border-2 border-dashed border-primary/30">
+              <div className="bg-primary/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <Plus className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Create New Household</h3>
+              <p className="text-muted-foreground mb-6">
+                Start a new household and invite family members to join. You'll be the admin with full control.
+              </p>
+              <Button 
+                onClick={() => setShowCreateDialog(true)} 
+                size="lg" 
+                className="w-full"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Create Household
+              </Button>
+            </Card>
+
+            {/* Join Household Card */}
+            <Card className="p-6 text-center hover:shadow-lg transition-shadow border-2 border-dashed border-secondary/30">
+              <div className="bg-secondary/10 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <Users className="h-8 w-8 text-secondary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">Join Existing Household</h3>
+              <p className="text-muted-foreground mb-6">
+                Join an existing household by entering the household name. Your request will be sent to the admin.
+              </p>
+              <Button 
+                onClick={() => setShowJoinDialog(true)} 
+                variant="outline" 
+                size="lg" 
+                className="w-full"
+              >
+                <Users className="mr-2 h-4 w-4" />
+                Join Household
+              </Button>
+            </Card>
+          </div>
+
+          <div className="pt-6 border-t border-border/30">
+            <Button variant="ghost" onClick={() => router.push('/')} className="text-muted-foreground">
+              <Home className="mr-2 h-4 w-4" />
+              Back to Dashboard
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -539,10 +668,6 @@ export default function HouseholdPage() {
                 <Button variant="outline" size="sm" onClick={forceRefreshHouseholdData} className="flex-1 sm:flex-none">
                   <RefreshCw className="mr-2 h-4 w-4" />
                   Force Refresh
-                </Button>
-                <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Invite Member
                 </Button>
                 <Button variant="outline" size="sm" asChild className="flex-1 sm:flex-none">
                   <Link href="/household/settings">
@@ -908,6 +1033,86 @@ export default function HouseholdPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Create Household Dialog */}
+      {showCreateDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Create New Household</h3>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="householdName" className="block text-sm font-medium mb-2">
+                  Household Name
+                </label>
+                <input
+                  id="householdName"
+                  type="text"
+                  placeholder="Enter household name"
+                  className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  value={householdName}
+                  onChange={(e) => setHouseholdName(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-3">
+                <Button 
+                  onClick={handleCreateHousehold} 
+                  className="flex-1"
+                  disabled={!householdName.trim()}
+                >
+                  Create
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowCreateDialog(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Join Household Dialog */}
+      {showJoinDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Join Existing Household</h3>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="joinHouseholdName" className="block text-sm font-medium mb-2">
+                  Household Name
+                </label>
+                <input
+                  id="joinHouseholdName"
+                  type="text"
+                  placeholder="Enter household name"
+                  className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  value={joinHouseholdName}
+                  onChange={(e) => setJoinHouseholdName(e.target.value)}
+                />
+              </div>
+              <div className="flex gap-3">
+                <Button 
+                  onClick={handleJoinHousehold} 
+                  className="flex-1"
+                  disabled={!joinHouseholdName.trim()}
+                >
+                  Send Request
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowJoinDialog(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

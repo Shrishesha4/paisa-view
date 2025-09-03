@@ -3,11 +3,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Wallet, LayoutDashboard, History, Users, LogOut, User } from "lucide-react";
+import { LayoutDashboard, History, Users, LogOut, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
 import { AuthDialog } from "./dialogs/auth-dialog";
-import { HouseholdDialog } from "./dialogs/household-dialog";
 import { Button } from "./ui/button";
 import { Chrome } from "lucide-react";
 import {
@@ -26,11 +25,7 @@ export function Navbar() {
   const { user, logout, signInWithGoogle } = useAuth();
   const [userData, setUserData] = useState<UserData | null>(null);
 
-  const navItems = [
-    { href: "/", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/history", label: "History", icon: History },
-    // Conditional household item - will be added dynamically
-  ];
+
 
   const handleLogout = async () => {
     try {

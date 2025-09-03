@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getOfflineSyncManager, OfflineSyncState, SyncQueueItem } from '@/lib/offline-sync';
 import { useAuth } from '@/lib/auth-context';
+import { Expense, Income, Budget, Category } from '@/lib/types';
 
 export function useOfflineSync() {
   const [syncState, setSyncState] = useState<OfflineSyncState>({
@@ -11,6 +12,12 @@ export function useOfflineSync() {
     syncQueue: [],
     isSyncing: false,
     lastSuccessfulSync: null,
+    syncErrors: [],
+    dataIntegrity: {
+      lastValidation: null,
+      hasConflicts: false,
+      conflictCount: 0,
+    },
   });
 
   const { user } = useAuth();
@@ -51,7 +58,7 @@ export function useOfflineSync() {
   }, []);
 
   // Add expense to sync queue
-  const addExpenseToSync = useCallback((expense: any, action: 'create' | 'update' | 'delete') => {
+  const addExpenseToSync = useCallback((expense: Expense, action: 'create' | 'update' | 'delete') => {
     if (user) {
       syncManager.addToSyncQueue({
         type: 'expense',
@@ -62,7 +69,7 @@ export function useOfflineSync() {
   }, [user, syncManager]);
 
   // Add income to sync queue
-  const addIncomeToSync = useCallback((income: any, action: 'create' | 'update' | 'delete') => {
+  const addIncomeToSync = useCallback((income: Income, action: 'create' | 'update' | 'delete') => {
     if (user) {
       syncManager.addToSyncQueue({
         type: 'income',
@@ -73,7 +80,7 @@ export function useOfflineSync() {
   }, [user, syncManager]);
 
   // Add budget to sync queue
-  const addBudgetToSync = useCallback((budget: any, action: 'create' | 'update' | 'delete') => {
+  const addBudgetToSync = useCallback((budget: Budget, action: 'create' | 'update' | 'delete') => {
     if (user) {
       syncManager.addToSyncQueue({
         type: 'budget',
@@ -84,7 +91,7 @@ export function useOfflineSync() {
   }, [user, syncManager]);
 
   // Add category to sync queue
-  const addCategoryToSync = useCallback((category: any, action: 'create' | 'update' | 'delete') => {
+  const addCategoryToSync = useCallback((category: Category, action: 'create' | 'update' | 'delete') => {
     if (user) {
       syncManager.addToSyncQueue({
         type: 'category',

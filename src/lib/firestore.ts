@@ -606,15 +606,24 @@ export class FirestoreService {
       
       console.log('Updated household members array');
       
-      // Update member's household data - use setDoc with merge to handle missing documents
+      // Update member's household data - completely reset all household-related fields
       const memberRef = doc(db, 'users', memberId);
       await setDoc(memberRef, {
         householdId: null,
         isAdmin: false,
+        // Clear any household removal flags to allow rejoining
+        householdRemoved: false,
+        householdRemovedBy: null,
+        householdRemovedAt: null,
       }, { merge: true });
       
       console.log('Updated member document');
       console.log('Successfully removed member:', householdId, memberId);
+      
+      // Force a cache invalidation by updating the timestamp
+      await setDoc(memberRef, {
+        lastSync: serverTimestamp(),
+      }, { merge: true });
     } catch (error) {
       console.error('Error removing member:', error);
       throw error;
@@ -634,6 +643,10 @@ export class FirestoreService {
         await setDoc(memberRef, {
           householdId: null,
           isAdmin: false,
+          // Clear any household removal flags to allow rejoining
+          householdRemoved: false,
+          householdRemovedBy: null,
+          householdRemovedAt: null,
         }, { merge: true });
       }
       
@@ -660,6 +673,25 @@ export class FirestoreService {
     } catch (error) {
       console.error('Error clearing household notification:', error);
       throw error;
+    }
+  }
+
+  // Force refresh user data to ensure latest state
+  static async forceRefreshUserData(userId: string): Promise<UserData | null> {
+    try {
+      // Force a fresh read from Firestore
+      const userRef = doc(db, 'users', userId);
+      const userSnap = await getDoc(userRef);
+      
+      if (userSnap.exists()) {
+        const userData = userSnap.data() as UserData;
+        console.log('Force refreshed user data:', userId, userData);
+        return userData;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error force refreshing user data:', error);
+      return null;
     }
   }
 

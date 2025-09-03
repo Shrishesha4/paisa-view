@@ -44,8 +44,10 @@ export function HouseholdDialog({ trigger }: HouseholdDialogProps) {
     if (!user) return;
     
     try {
-      const data = await FirestoreService.getUserData(user.uid);
+      // Force refresh to get latest state
+      const data = await FirestoreService.forceRefreshUserData(user.uid);
       setUserData(data);
+      console.log('Loaded fresh user data:', data);
     } catch (error) {
       console.error("Error loading user data:", error);
     }
@@ -106,8 +108,11 @@ export function HouseholdDialog({ trigger }: HouseholdDialogProps) {
       isAuthenticated: !!user 
     });
     
+    // Force refresh user data to ensure latest state
+    const refreshedUserData = await FirestoreService.forceRefreshUserData(user.uid);
+    
     // Check if user is already in a household
-    const isInHousehold = await FirestoreService.isUserInHousehold(user.uid);
+    const isInHousehold = !!(refreshedUserData?.householdId);
     if (isInHousehold) {
       toast({
         title: "Already in Household",
