@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -6,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import type { Expense, Income } from "@/lib/types";
 import { getCategoryIcon } from "@/lib/constants";
 import { ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
-import { cn } from "@/lib/utils";
+import { cn, capitalize } from "@/lib/utils";
 import { Skeleton } from "./ui/skeleton";
 
 type Transaction = (Expense | Income) & { type: 'income' | 'expense' };
@@ -66,7 +67,8 @@ export function RecentTransactions({ isClient, expenses, income }: RecentTransac
         </TableHeader>
         <TableBody>
           {transactions.map((transaction) => {
-            const Icon = getCategoryIcon(transaction.category);
+            const category = transaction.type === 'expense' ? capitalize(transaction.category) : transaction.category;
+            const Icon = getCategoryIcon(category);
             return (
               <TableRow key={transaction.id}>
                 <TableCell>
@@ -79,7 +81,7 @@ export function RecentTransactions({ isClient, expenses, income }: RecentTransac
                 <TableCell>
                   <Badge variant="outline" className="flex items-center w-fit">
                     <Icon className="mr-1 h-3 w-3" />
-                    {transaction.category}
+                    {category}
                   </Badge>
                 </TableCell>
                 <TableCell>{formatDate(transaction.date)}</TableCell>

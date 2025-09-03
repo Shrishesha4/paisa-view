@@ -1,9 +1,11 @@
+
 "use client";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Expense } from "@/lib/types";
+import { capitalize } from "@/lib/utils";
 
 type ExpensePieChartProps = {
   isClient: boolean;
@@ -21,11 +23,12 @@ const COLORS = [
 export function ExpensePieChart({ isClient, expenses }: ExpensePieChartProps) {
   const chartData = expenses
     .reduce((acc, expense) => {
-      const existingCategory = acc.find((item) => item.name === expense.category);
+      const category = capitalize(expense.category);
+      const existingCategory = acc.find((item) => item.name === category);
       if (existingCategory) {
         existingCategory.value += expense.amount;
       } else {
-        acc.push({ name: expense.category, value: expense.amount });
+        acc.push({ name: category, value: expense.amount });
       }
       return acc;
     }, [] as { name: string; value: number }[])
