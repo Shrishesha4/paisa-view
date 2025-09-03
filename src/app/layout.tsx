@@ -35,7 +35,7 @@ export default function RootLayout({
             disableTransitionOnChange
         >
           <Navbar />
-          <main className="pt-20">
+          <main className="pt-20 md:pt-24 pb-24 md:pb-4">
             {children}
           </main>
           <Toaster />

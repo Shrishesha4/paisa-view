@@ -107,7 +107,7 @@ export function DashboardClient() {
           onExport={handleExportData}
           onImport={handleImportData}
         />
-        <main className="flex-1 overflow-y-auto pb-28 p-4 md:p-6 space-y-4 md:space-y-6">
+        <main className="flex-1 space-y-4 md:space-y-6">
             <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 <SummaryCards
                     isClient={isClient}
@@ -127,7 +127,7 @@ export function DashboardClient() {
         </main>
       </div>
 
-       <div className="fixed bottom-0 left-0 right-0 z-10 p-4 md:hidden">
+       <div className="fixed bottom-20 left-0 right-0 z-10 p-4 md:hidden">
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent pointer-events-none"></div>
         <div className="relative grid grid-cols-2 gap-2">
             <Button onClick={() => setAddExpenseOpen(true)} size="lg" className="shadow-lg"><PlusCircle className="mr-2 h-4 w-4" /> Expense</Button>
