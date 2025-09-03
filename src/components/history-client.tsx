@@ -36,27 +36,35 @@ export function HistoryClient() {
 
   const handleBatchCategorize = async () => {
     setIsCategorizing(true);
-    const originalUncategorizedCount = expenses.filter(e => e.category.toLowerCase() === 'other' && e.description?.trim() && e.description.trim() !== 'N/A').length;
+    
+    const expensesBefore = JSON.parse(JSON.stringify(expenses));
 
     const result = await batchCategorizeExpenses(expenses);
+
     if (result.success && result.data) {
-      setExpenses(result.data);
-      const newUncategorizedCount = result.data.filter(e => e.category.toLowerCase() === 'other' && e.description?.trim() && e.description.trim() !== 'N/A').length;
-      const categorizedCount = originalUncategorizedCount - newUncategorizedCount;
-      
-      toast({
-        title: "Categorization Complete",
-        description: `Successfully categorized ${categorizedCount} expense(s).`,
-      });
+        setExpenses(result.data);
+
+        let categorizedCount = 0;
+        result.data.forEach(newExpense => {
+            const oldExpense = expensesBefore.find((old: Expense) => old.id === newExpense.id);
+            if (oldExpense && capitalize(oldExpense.category) !== capitalize(newExpense.category)) {
+                categorizedCount++;
+            }
+        });
+
+        toast({
+            title: "Categorization Complete",
+            description: `Successfully categorized ${categorizedCount} expense(s).`,
+        });
     } else {
-      toast({
-        variant: "destructive",
-        title: "Categorization Failed",
-        description: result.error || "An unknown error occurred.",
-      });
+        toast({
+            variant: "destructive",
+            title: "Categorization Failed",
+            description: result.error || "An unknown error occurred.",
+        });
     }
     setIsCategorizing(false);
-  };
+};
   
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
