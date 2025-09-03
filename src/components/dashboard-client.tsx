@@ -108,7 +108,7 @@ export function DashboardClient() {
           onImport={handleImportData}
         />
         <main className="flex-1 space-y-4 md:space-y-6">
-            <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-3">
                 <SummaryCards
                     isClient={isClient}
                     totalIncome={totalIncome}

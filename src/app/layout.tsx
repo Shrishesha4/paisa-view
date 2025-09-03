@@ -1,3 +1,4 @@
+
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -35,7 +36,7 @@ export default function RootLayout({
             disableTransitionOnChange
         >
           <Navbar />
-          <main className="pt-20 md:pt-24 pb-24 md:pb-4">
+          <main className="pt-24 pb-4">
             {children}
           </main>
           <Toaster />
