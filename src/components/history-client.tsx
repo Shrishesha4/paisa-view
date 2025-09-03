@@ -13,7 +13,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "./ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
-import { batchCategorizeExpenses } from "@/app/actions";
+import { batchRecategorize } from "@/lib/categorization";
 import { useToast } from "@/hooks/use-toast";
 
 type Transaction = (Expense | Income) & { type: 'income' | 'expense' };
@@ -34,36 +34,25 @@ export function HistoryClient() {
     ...expenses.map(e => ({ ...e, category: capitalize(e.category), type: 'expense' as const }))
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [income, expenses]);
 
-  const handleBatchCategorize = async () => {
+  const handleBatchCategorize = () => {
     setIsCategorizing(true);
-    
-    const expensesBefore = JSON.parse(JSON.stringify(expenses));
-
-    const result = await batchCategorizeExpenses(expenses);
-
-    if (result.success && result.data) {
-        setExpenses(result.data);
-
-        let categorizedCount = 0;
-        result.data.forEach(newExpense => {
-            const oldExpense = expensesBefore.find((old: Expense) => old.id === newExpense.id);
-            if (oldExpense && capitalize(oldExpense.category) !== capitalize(newExpense.category)) {
-                categorizedCount++;
-            }
-        });
-
-        toast({
-            title: "Categorization Complete",
-            description: `Successfully categorized ${categorizedCount} expense(s).`,
-        });
-    } else {
-        toast({
-            variant: "destructive",
-            title: "Categorization Failed",
-            description: result.error || "An unknown error occurred.",
-        });
+    try {
+      const { updatedExpenses, changedCount } = batchRecategorize(expenses);
+      setExpenses(updatedExpenses);
+      toast({
+          title: "Categorization Complete",
+          description: `Successfully updated ${changedCount} expense(s).`,
+      });
+    } catch (e) {
+      console.error("Batch categorization failed:", e);
+      toast({
+        variant: "destructive",
+        title: "Categorization Failed",
+        description: "Could not recategorize your expenses.",
+      });
+    } finally {
+      setIsCategorizing(false);
     }
-    setIsCategorizing(false);
 };
   
   const formatCurrency = (amount: number) => {
@@ -261,7 +250,7 @@ export function HistoryClient() {
             ) : (
               <Sparkles className="mr-2 h-4 w-4" />
             )}
-            Categorize with AI
+            Recategorize
           </Button>
         </header>
         <main className="flex-1">
