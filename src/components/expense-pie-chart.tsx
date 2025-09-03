@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Expense } from "@/lib/types";
 import { capitalize } from "@/lib/utils";
+import Link from 'next/link';
+import { getCategoryIcon } from "@/lib/constants";
 
 type ExpensePieChartProps = {
   isClient: boolean;
@@ -19,6 +21,26 @@ const COLORS = [
   "hsl(var(--chart-4))",
   "hsl(var(--chart-5))",
 ];
+
+const renderLegend = (props: any) => {
+  const { payload } = props;
+  return (
+    <ul className="flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">
+      {payload.map((entry: any, index: number) => {
+        const Icon = getCategoryIcon(entry.value);
+        return (
+          <li key={`item-${index}`} className="flex items-center">
+            <Link href={`/category/${encodeURIComponent(entry.value)}`} className="flex items-center gap-1.5 hover:underline">
+              <Icon className="h-4 w-4" style={{ color: entry.color }} />
+              <span className="text-muted-foreground">{entry.value}</span>
+            </Link>
+          </li>
+        )
+      })}
+    </ul>
+  );
+};
+
 
 export function ExpensePieChart({ isClient, expenses }: ExpensePieChartProps) {
   const chartData = expenses
@@ -73,11 +95,7 @@ export function ExpensePieChart({ isClient, expenses }: ExpensePieChartProps) {
               new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(value as number)
             }
           />
-          <Legend
-            wrapperStyle={{
-                fontSize: "14px",
-            }}
-          />
+          <Legend content={renderLegend}/>
         </PieChart>
       </ResponsiveContainer>
     );

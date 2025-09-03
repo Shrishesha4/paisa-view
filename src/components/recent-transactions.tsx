@@ -9,6 +9,7 @@ import { getCategoryIcon } from "@/lib/constants";
 import { ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { cn, capitalize } from "@/lib/utils";
 import { Skeleton } from "./ui/skeleton";
+import Link from "next/link";
 
 type Transaction = (Expense | Income) & { type: 'income' | 'expense' };
 
@@ -79,10 +80,19 @@ export function RecentTransactions({ isClient, expenses, income }: RecentTransac
                 </TableCell>
                 <TableCell className="font-medium">{transaction.description}</TableCell>
                 <TableCell>
-                  <Badge variant="outline" className="flex items-center w-fit">
-                    <Icon className="mr-1 h-3 w-3" />
-                    {category}
-                  </Badge>
+                    {transaction.type === 'expense' ? (
+                        <Link href={`/category/${encodeURIComponent(category)}`}>
+                            <Badge variant="outline" className="flex items-center w-fit hover:bg-accent">
+                                <Icon className="mr-1 h-3 w-3" />
+                                {category}
+                            </Badge>
+                        </Link>
+                    ) : (
+                         <Badge variant="outline" className="flex items-center w-fit">
+                            <Icon className="mr-1 h-3 w-3" />
+                            {category}
+                        </Badge>
+                    )}
                 </TableCell>
                 <TableCell>{formatDate(transaction.date)}</TableCell>
                 <TableCell className={cn('text-right font-semibold', transaction.type === 'income' ? 'text-success' : 'text-destructive')}>

@@ -12,9 +12,11 @@ import { cn, capitalize } from "@/lib/utils";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "./ui/button";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, ArrowUpDown } from "lucide-react";
 import { batchRecategorize } from "@/lib/categorization";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
 type Transaction = (Expense | Income) & { type: 'income' | 'expense' };
 
@@ -24,15 +26,40 @@ export function HistoryClient() {
   const [isClient, setIsClient] = React.useState(false);
   const [isCategorizing, setIsCategorizing] = React.useState(false);
   const { toast } = useToast();
+  
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const sort = searchParams.get('sort') || 'date-desc';
+  const [sortBy, sortOrder] = sort.split('-');
 
   React.useEffect(() => {
     setIsClient(true);
   }, []);
 
-  const transactions: Transaction[] = React.useMemo(() => [
-    ...income.map(i => ({ ...i, type: 'income' as const })),
-    ...expenses.map(e => ({ ...e, category: capitalize(e.category), type: 'expense' as const }))
-  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [income, expenses]);
+  const handleSortChange = (value: string) => {
+    const params = new URLSearchParams(searchParams);
+    params.set('sort', value);
+    router.replace(`${pathname}?${params.toString()}`);
+  }
+
+  const transactions: Transaction[] = React.useMemo(() => {
+    const combined = [
+      ...income.map(i => ({ ...i, type: 'income' as const })),
+      ...expenses.map(e => ({ ...e, category: capitalize(e.category), type: 'expense' as const }))
+    ];
+
+    return combined.sort((a, b) => {
+      let comparison = 0;
+      if (sortBy === 'date') {
+        comparison = new Date(b.date).getTime() - new Date(a.date).getTime();
+      } else if (sortBy === 'amount') {
+        comparison = b.amount - a.amount;
+      }
+      return sortOrder === 'asc' ? -comparison : comparison;
+    });
+  }, [income, expenses, sortBy, sortOrder]);
 
   const handleBatchCategorize = () => {
     setIsCategorizing(true);
@@ -134,6 +161,7 @@ export function HistoryClient() {
                       <div className="font-semibold">{groupKey}</div>
                       <div className="text-xs text-muted-foreground">
                         {dailyTransactions.length} transaction(s)
+                         {groupBy === 'month' && ` | Total Income: ${formatCurrency(totalCredit)}`}
                       </div>
                     </div>
                     <div className="text-right">
@@ -231,7 +259,7 @@ export function HistoryClient() {
 
   return (
      <div className="flex-1 flex flex-col bg-background p-4 md:p-6">
-        <header className="mb-4 flex items-center justify-between gap-2">
+        <header className="mb-4 flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="md:hidden" />
             <div>
@@ -239,19 +267,33 @@ export function HistoryClient() {
               <p className="text-muted-foreground">A detailed log of all your income and expenses.</p>
             </div>
           </div>
-          <Button
-            onClick={handleBatchCategorize}
-            disabled={isCategorizing}
-            size="sm"
-            variant="outline"
-          >
-            {isCategorizing ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="mr-2 h-4 w-4" />
-            )}
-            Recategorize
-          </Button>
+          <div className="flex items-center gap-2">
+            <Select onValueChange={handleSortChange} defaultValue={sort}>
+              <SelectTrigger className="w-[180px]">
+                <ArrowUpDown className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date-desc">Date: Newest</SelectItem>
+                <SelectItem value="date-asc">Date: Oldest</SelectItem>
+                <SelectItem value="amount-desc">Amount: High-Low</SelectItem>
+                <SelectItem value="amount-asc">Amount: Low-High</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              onClick={handleBatchCategorize}
+              disabled={isCategorizing}
+              size="sm"
+              variant="outline"
+            >
+              {isCategorizing ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 h-4 w-4" />
+              )}
+              Recategorize
+            </Button>
+          </div>
         </header>
         <main className="flex-1">
             <Card>
