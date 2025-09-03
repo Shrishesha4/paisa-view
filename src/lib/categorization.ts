@@ -1,7 +1,36 @@
+
 "use client"
 
 import type { Expense } from "./types";
 import { capitalize } from "./utils";
+
+// A dictionary for common misspellings and aliases to normalize keywords.
+const KEYWORD_ALIAS_MAP: Record<string, string> = {
+  parrata: 'paratha',
+  maligai: 'groceries',
+  maliahi: 'groceries',
+  med: 'medicine',
+  tablet: 'medicine',
+  vagetables: 'vegetable',
+  shop: 'shopping',
+};
+
+// A dictionary to directly map certain keywords to a final category.
+const KEYWORD_TO_CATEGORY_MAP: Record<string, string> = {
+  paratha: 'Food',
+  groceries: 'Groceries',
+  medicine: 'Health',
+  vegetable: 'Groceries',
+  milk: 'Groceries',
+  rice: 'Groceries',
+  oil: 'Groceries',
+  soap: 'Personal Care',
+  water: 'Utilities',
+  coffee: 'Food',
+  tea: 'Food',
+  snacks: 'Food',
+  gift: 'Gifts'
+};
 
 /**
  * A simple keyword-based categorization model that learns from past transactions.
@@ -34,6 +63,7 @@ class CategorizationModel {
       if (!expense.description || !expense.category) continue;
       
       const category = this.normalizeCategory(expense.category);
+      // We don't want to learn from 'Other' as it's not a specific category.
       if (category.toLowerCase() === 'other') continue;
 
       const keywords = this.extractKeywords(expense.description);
@@ -47,7 +77,7 @@ class CategorizationModel {
       }
     }
 
-    // Find the best category for each keyword
+    // Find the best category for each keyword based on user's history
     for (const [keyword, categoryScores] of keywordScores.entries()) {
       let bestCategory = '';
       let maxScore = 0;
@@ -72,28 +102,36 @@ class CategorizationModel {
 
     const keywords = this.extractKeywords(description);
     let bestMatch: string | null = null;
+    let predictedCategory: string | null = null;
 
     for (const keyword of keywords) {
+      // Priority 1: Direct mapping from our dictionary
+      if (KEYWORD_TO_CATEGORY_MAP[keyword]) {
+        return KEYWORD_TO_CATEGORY_MAP[keyword];
+      }
+      
+      // Priority 2: Learned from user's history
       if (this.keywordToCategory.has(keyword)) {
         if (!bestMatch || keyword.length > bestMatch.length) {
           bestMatch = keyword;
+          predictedCategory = this.keywordToCategory.get(keyword) || null;
         }
       }
     }
 
-    return bestMatch ? this.keywordToCategory.get(bestMatch) || null : null;
+    return predictedCategory;
   }
   
   /**
-   * Extracts meaningful keywords from a description string.
-   * Splits by space and removes common stop words and short words.
+   * Extracts, normalizes, and corrects meaningful keywords from a description string.
    */
   private extractKeywords(description: string): string[] {
-    const stopWords = new Set(['and', 'the', 'for', 'a', 'in', 'with', 'to', 'of']);
+    const stopWords = new Set(['and', 'the', 'for', 'a', 'in', 'with', 'to', 'of', 'from']);
     return description
       .toLowerCase()
       .split(/\s+/)
-      .map(word => word.replace(/[^a-z0-9]/gi, ''))
+      .map(word => word.replace(/[^a-z0-9]/gi, '')) // Sanitize
+      .map(word => KEYWORD_ALIAS_MAP[word] || word) // Correct aliases/misspellings
       .filter(word => word.length > 2 && !stopWords.has(word));
   }
 }
@@ -125,17 +163,16 @@ export function batchRecategorize(allExpenses: Expense[]): { updatedExpenses: Ex
     const originalCategory = expense.category;
     const newCategorySuggestion = model.predict(expense.description);
 
-    if (newCategorySuggestion && newCategorySuggestion !== capitalize(originalCategory.split(',')[0].trim())) {
-      changedCount++;
-      return { ...expense, category: newCategorySuggestion };
+    // If we have a suggestion and it's different from the original (normalized) category
+    if (newCategorySuggestion && newCategorySuggestion !== this.normalizeCategory(originalCategory)) {
+        changedCount++;
+        return { ...expense, category: newCategorySuggestion };
     }
     
-    // Normalize existing category even if no new suggestion is found
-    const normalizedCategory = capitalize(originalCategory.split(',')[0].trim());
+    // If no new suggestion, just normalize the existing category.
+    const normalizedCategory = this.normalizeCategory(originalCategory);
     if (normalizedCategory !== originalCategory) {
-      if (!newCategorySuggestion) { // Only count as changed if AI didn't already change it
-        changedCount++;
-      }
+      changedCount++;
       return { ...expense, category: normalizedCategory };
     }
     
