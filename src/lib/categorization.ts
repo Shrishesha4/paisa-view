@@ -23,7 +23,7 @@ const KEYWORD_TO_CATEGORY_MAP: Record<string, string> = {
   vegetable: 'Groceries',
   vegetables: 'Groceries',
   milk: 'Groceries',
-  rice: 'Groceries',
+  rice: 'Food',
   oil: 'Groceries',
   soap: 'Personal Care',
   water: 'Utilities',
@@ -117,7 +117,7 @@ class CategorizationModel {
    * Extracts, normalizes, and corrects meaningful keywords from a description string.
    */
   private extractKeywords(description: string): string[] {
-    const stopWords = new Set(['and', 'the', 'for', 'a', 'in', 'with', 'to', 'of', 'from', '-', 'thebashesha']);
+    const stopWords = new Set(['and', 'the', 'for', 'a', 'in', 'with', 'to', 'of', 'from', '-']);
     return description
       .toLowerCase()
       .split(/\s+/)
