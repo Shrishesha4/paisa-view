@@ -48,6 +48,7 @@ const categorizeExpensePrompt = ai.definePrompt({
       {{/each}}
 
       If none of the existing categories match well, choose one from this list: Food, Transport, Shopping, Utilities, Entertainment, Health, Rent, Other.
+      If the description is empty or not descriptive enough, respond with "Other".
       Respond with only the category name.
     `,
 });
@@ -59,8 +60,8 @@ const categorizeExpenseFlow = ai.defineFlow(
     outputSchema: CategorizeExpenseOutputSchema,
   },
   async (input: CategorizeExpenseInput) => {
-    if (!input.description) {
-      return '';
+    if (!input.description?.trim()) {
+      return 'Other';
     }
     const {output} = await categorizeExpensePrompt(input);
     return output!;
