@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -43,7 +42,7 @@ export function Navbar() {
       </header>
       
       {/* Mobile Bottom Navbar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden border-t border-border/50 bg-background/80 backdrop-blur-sm">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-background/80 backdrop-blur-sm md:hidden">
          <div className="container mx-auto flex items-center justify-around p-2">
             {navItems.map((item) => (
                 <Link
