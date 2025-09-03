@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -49,7 +50,9 @@ const DrawerContent = React.forwardRef<
       {...props}
     >
       <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />
-      <div className="p-4">{children}</div>
+      <div className="overflow-y-auto p-4">
+        {children}
+      </div>
     </DrawerPrimitive.Content>
   </DrawerPortal>
 ))
