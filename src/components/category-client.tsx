@@ -11,6 +11,7 @@ import { getCategoryIcon } from "@/lib/constants";
 import { Button } from "./ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { Skeleton } from "./ui/skeleton";
 
 type CategoryClientProps = {
   categoryName: string;
@@ -19,6 +20,12 @@ type CategoryClientProps = {
 export function CategoryClient({ categoryName: encodedCategoryName }: CategoryClientProps) {
   const [expenses] = useLocalStorage<Expense[]>("expenses", []);
   const router = useRouter();
+  const [isClient, setIsClient] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsClient(true);
+  }, []);
+
 
   const categoryName = React.useMemo(() => decodeURIComponent(encodedCategoryName), [encodedCategoryName]);
 
@@ -56,9 +63,13 @@ export function CategoryClient({ categoryName: encodedCategoryName }: CategoryCl
              <Icon className="h-7 w-7 text-muted-foreground" />
             <div>
                  <h1 className="text-2xl md:text-3xl font-bold">{capitalize(categoryName)}</h1>
-                 <p className="text-muted-foreground">
-                    Total spent: {formatCurrency(totalAmount)} on {filteredExpenses.length} transactions.
-                 </p>
+                {isClient ? (
+                    <p className="text-muted-foreground">
+                        Total spent: {formatCurrency(totalAmount)} on {filteredExpenses.length} transactions.
+                    </p>
+                ) : (
+                    <Skeleton className="h-5 w-48 mt-1" />
+                )}
             </div>
           </div>
         </div>
@@ -66,34 +77,42 @@ export function CategoryClient({ categoryName: encodedCategoryName }: CategoryCl
       <main className="flex-1">
         <Card>
           <CardContent className="pt-6">
-             <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredExpenses.length > 0 ? (
-                     filteredExpenses.map((expense) => (
-                        <TableRow key={expense.id}>
-                            <TableCell>{formatDate(expense.date)}</TableCell>
-                            <TableCell className="font-medium">{expense.description}</TableCell>
-                            <TableCell className="text-right font-semibold text-destructive">
-                                -{formatCurrency(expense.amount)}
+            {!isClient ? (
+                <div className="space-y-2">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                </div>
+            ) : (
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                    </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {filteredExpenses.length > 0 ? (
+                        filteredExpenses.map((expense) => (
+                            <TableRow key={expense.id}>
+                                <TableCell>{formatDate(expense.date)}</TableCell>
+                                <TableCell className="font-medium">{expense.description}</TableCell>
+                                <TableCell className="text-right font-semibold text-destructive">
+                                    -{formatCurrency(expense.amount)}
+                                </TableCell>
+                            </TableRow>
+                        ))
+                    ) : (
+                        <TableRow>
+                            <TableCell colSpan={3} className="text-center text-muted-foreground py-10">
+                                No expenses found for this category.
                             </TableCell>
                         </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                        <TableCell colSpan={3} className="text-center text-muted-foreground py-10">
-                            No expenses found for this category.
-                        </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                    )}
+                    </TableBody>
+                </Table>
+            )}
           </CardContent>
         </Card>
       </main>
