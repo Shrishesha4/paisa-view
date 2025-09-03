@@ -127,11 +127,12 @@ export function DashboardClient() {
         </main>
       </div>
 
-       <div className="fixed bottom-20 left-0 right-0 z-10 p-4 md:hidden">
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent pointer-events-none"></div>
-        <div className="relative grid grid-cols-2 gap-2">
-            <Button onClick={() => setAddExpenseOpen(true)} size="lg" className="shadow-lg"><PlusCircle className="mr-2 h-4 w-4" /> Expense</Button>
-            <Button onClick={() => setAddIncomeOpen(true)} variant="secondary" size="lg" className="shadow-lg">Add Income</Button>
+       <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden">
+        <div className="mx-auto max-w-sm p-2 rounded-2xl bg-background/80 backdrop-blur-sm border border-border/50 shadow-lg">
+            <div className="grid grid-cols-2 gap-2">
+                <Button onClick={() => setAddExpenseOpen(true)} size="lg" className="shadow-lg rounded-xl"><PlusCircle className="mr-2 h-4 w-4" /> Expense</Button>
+                <Button onClick={() => setAddIncomeOpen(true)} variant="secondary" size="lg" className="shadow-lg rounded-xl">Add Income</Button>
+            </div>
         </div>
       </div>
 
