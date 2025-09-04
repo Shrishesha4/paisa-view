@@ -2,8 +2,9 @@
 import { CategoryClient } from "@/components/category-client";
 import { Suspense } from "react";
 
-function CategoryPageContent({ params }: { params: { category: string } }) {
-  const categoryName = decodeURIComponent(params.category);
+async function CategoryPageContent({ params }: { params: Promise<{ category: string }> }) {
+  const resolvedParams = await params;
+  const categoryName = decodeURIComponent(resolvedParams.category);
   return (
     <div className="flex min-h-screen">
       <CategoryClient categoryName={categoryName} />
@@ -11,7 +12,7 @@ function CategoryPageContent({ params }: { params: { category: string } }) {
   );
 }
 
-export default function CategoryPage({ params }: { params: { category: string } }) {
+export default async function CategoryPage({ params }: { params: Promise<{ category: string }> }) {
     return (
     <Suspense fallback={<div>Loading...</div>}>
       <CategoryPageContent params={params} />

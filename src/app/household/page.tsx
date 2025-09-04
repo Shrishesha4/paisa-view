@@ -26,9 +26,12 @@ import {
   ChevronRight,
   MoreHorizontal,
   User,
-  Plus
+  Plus,
+  BarChart3,
+  Target
 } from "lucide-react";
 import { FirestoreService, UserData, Household } from "@/lib/firestore";
+import { HouseholdBudget, BudgetGoal } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 
 export default function HouseholdPage() {
@@ -39,7 +42,7 @@ export default function HouseholdPage() {
   const [household, setHousehold] = useState<Household | null>(null);
   const [householdMembers, setHouseholdMembers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"overview" | "monthly" | "reports" | "members">("overview");
+  const [view, setView] = useState<"overview" | "monthly" | "reports" | "budget" | "members">("overview");
   
   // Aggregated financial data
   const [totalExpenses, setTotalExpenses] = useState(0);
@@ -58,6 +61,17 @@ export default function HouseholdPage() {
   const [monthlyComparisons, setMonthlyComparisons] = useState<any[]>([]);
   const [yearlyComparisons, setYearlyComparisons] = useState<any[]>([]);
   const [financialYearData, setFinancialYearData] = useState<any>(null);
+  
+  // Budget and Goals data
+  const [householdBudget, setHouseholdBudget] = useState<HouseholdBudget | null>(null);
+  const [budgetGoals, setBudgetGoals] = useState<BudgetGoal[]>([]);
+  const [budgetProgress, setBudgetProgress] = useState<any>(null);
+  const [showBudgetDialog, setShowBudgetDialog] = useState(false);
+  const [showGoalDialog, setShowGoalDialog] = useState(false);
+  
+  // Temporary form data
+  const [tempBudget, setTempBudget] = useState<Partial<HouseholdBudget>>({});
+  const [tempGoal, setTempGoal] = useState<Partial<BudgetGoal>>({});
 
   // Calculated values
   const totalSavings = totalIncome - totalExpenses;
@@ -170,6 +184,9 @@ export default function HouseholdPage() {
           totalIncome: m.incomes?.reduce((sum, inc) => sum + inc.amount, 0) || 0
         })));
         calculateAggregatedFinances(householdData);
+        
+        // Load budget and goals data
+        await loadBudgetAndGoalsData(data.householdId);
       }
     } catch (error) {
       console.error("Error loading household data:", error);
@@ -408,6 +425,178 @@ export default function HouseholdPage() {
       savings: fyIncome - fyExpenses,
       savingsRate: fyIncome > 0 ? ((fyIncome - fyExpenses) / fyIncome) * 100 : 0
     });
+    
+    // Calculate budget progress and goals
+    calculateBudgetProgress(members);
+  };
+
+  const handleSetHouseholdBudget = async (budgetData: Partial<HouseholdBudget>) => {
+    if (!user || !userData?.householdId || !userData?.isAdmin) return;
+    
+    try {
+      setLoading(true);
+      await FirestoreService.setHouseholdBudget(userData.householdId, {
+        ...budgetData,
+        createdBy: user.uid
+      });
+      
+      // Refresh budget data
+      const updatedBudget = await FirestoreService.getHouseholdBudget(userData.householdId);
+      setHouseholdBudget(updatedBudget);
+      setShowBudgetDialog(false);
+      
+      toast({
+        title: "Budget Set!",
+        description: "Household budget has been updated successfully.",
+      });
+    } catch (error: any) {
+      console.error('Error setting household budget:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to set household budget. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenBudgetDialog = () => {
+    // Initialize temporary budget with current values or defaults
+    setTempBudget({
+      monthlyBudget: householdBudget?.monthlyBudget || 0,
+      description: householdBudget?.description || ''
+    });
+    setShowBudgetDialog(true);
+  };
+
+  const handleOpenGoalDialog = () => {
+    // Initialize temporary goal with defaults
+    setTempGoal({
+      title: '',
+      description: '',
+      type: 'savings',
+      targetAmount: 0,
+      monthlyTarget: 0,
+      weeklyTarget: 0,
+      dailyTarget: 0
+    });
+    setShowGoalDialog(true);
+  };
+
+  const handleSetBudgetGoal = async (goalData: Partial<BudgetGoal>) => {
+    if (!user || !userData?.householdId || !userData?.isAdmin) return;
+    
+    try {
+      setLoading(true);
+      await FirestoreService.setBudgetGoal(userData.householdId, {
+        ...goalData,
+        createdBy: user.uid
+      });
+      
+      // Refresh goals data
+      const updatedGoals = await FirestoreService.getHouseholdGoals(userData.householdId);
+      setBudgetGoals(updatedGoals);
+      setShowGoalDialog(false);
+      
+      toast({
+        title: "Goal Set!",
+        description: "New budget goal has been added successfully.",
+      });
+    } catch (error: any) {
+      console.error('Error setting budget goal:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to set budget goal. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateBudgetProgress = (members: UserData[]) => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const currentDate = now.getDate();
+    const currentWeek = Math.ceil(currentDate / 7);
+    
+    // Get current month expenses and income
+    let currentMonthExpenses = 0;
+    let currentMonthIncome = 0;
+    
+    members.forEach(member => {
+      const memberExpenses = member.expenses?.filter(exp => {
+        const expDate = new Date(exp.date);
+        return expDate.getMonth() === currentMonth && expDate.getFullYear() === currentYear;
+      }).reduce((sum, exp) => sum + exp.amount, 0) || 0;
+      
+      const memberIncome = member.incomes?.filter(inc => {
+        const incDate = new Date(inc.date);
+        return incDate.getMonth() === currentMonth && incDate.getFullYear() === currentYear;
+      }).reduce((sum, inc) => sum + inc.amount, 0) || 0;
+      
+      currentMonthExpenses += memberExpenses;
+      currentMonthIncome += memberIncome;
+    });
+    
+    // Calculate weekly and daily averages
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const weeksInMonth = Math.ceil(daysInMonth / 7);
+    
+    const dailyExpenseAverage = currentMonthExpenses / currentDate;
+    const weeklyExpenseAverage = currentMonthExpenses / currentWeek;
+    const monthlyExpenseAverage = currentMonthExpenses;
+    
+    const dailyIncomeAverage = currentMonthIncome / currentDate;
+    const weeklyIncomeAverage = currentMonthIncome / currentWeek;
+    const monthlyIncomeAverage = currentMonthIncome;
+    
+    // Calculate projections
+    const projectedMonthlyExpenses = dailyExpenseAverage * daysInMonth;
+    const projectedMonthlyIncome = dailyIncomeAverage * daysInMonth;
+    
+    // Calculate savings rate
+    const currentSavings = currentMonthIncome - currentMonthExpenses;
+    const projectedSavings = projectedMonthlyIncome - projectedMonthlyExpenses;
+    
+    setBudgetProgress({
+      current: {
+        daily: { expenses: dailyExpenseAverage, income: dailyIncomeAverage },
+        weekly: { expenses: weeklyExpenseAverage, income: weeklyIncomeAverage },
+        monthly: { expenses: monthlyExpenseAverage, income: monthlyIncomeAverage }
+      },
+      projected: {
+        monthly: { expenses: projectedMonthlyExpenses, income: projectedMonthlyIncome, savings: projectedSavings }
+      },
+      averages: {
+        daily: dailyExpenseAverage,
+        weekly: weeklyExpenseAverage,
+        monthly: monthlyExpenseAverage
+      },
+      savings: {
+        current: currentSavings,
+        projected: projectedSavings,
+        rate: currentMonthIncome > 0 ? (currentSavings / currentMonthIncome) * 100 : 0
+      }
+    });
+  };
+
+  const loadBudgetAndGoalsData = async (householdId: string) => {
+    try {
+      // Load budget data
+      const budget = await FirestoreService.getHouseholdBudget(householdId);
+      setHouseholdBudget(budget);
+      
+      // Load goals data
+      const goals = await FirestoreService.getHouseholdGoals(householdId);
+      setBudgetGoals(goals);
+      
+      console.log('Budget and goals data loaded:', { budget, goals });
+    } catch (error) {
+      console.error('Error loading budget and goals data:', error);
+    }
   };
 
   const handleLeaveHousehold = async () => {
@@ -833,6 +1022,10 @@ export default function HouseholdPage() {
 
         </div>
         
+
+
+
+
         {/* Create Household Dialog */}
         {showCreateDialog && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -983,11 +1176,27 @@ export default function HouseholdPage() {
       </header>
 
       <Tabs value={view} onValueChange={(value) => setView(value as any)} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="monthly">Monthly</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
-          <TabsTrigger value="members">Members</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="overview" className="flex items-center gap-2">
+            <Home className="h-4 w-4 md:hidden" />
+            <span className="hidden md:inline">Overview</span>
+          </TabsTrigger>
+          <TabsTrigger value="monthly" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 md:hidden" />
+            <span className="hidden md:inline">Monthly</span>
+          </TabsTrigger>
+          <TabsTrigger value="reports" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 md:hidden" />
+            <span className="hidden md:inline">Reports</span>
+          </TabsTrigger>
+          <TabsTrigger value="budget" className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4 md:hidden" />
+            <span className="hidden md:inline">Budget & Goals</span>
+          </TabsTrigger>
+          <TabsTrigger value="members" className="flex items-center gap-2">
+            <Users className="h-4 w-4 md:hidden" />
+            <span className="hidden md:inline">Members</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -1434,6 +1643,291 @@ export default function HouseholdPage() {
           )}
         </TabsContent>
 
+        <TabsContent value="budget" className="space-y-6">
+          {/* Budget & Goals Header */}
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-bold">Budget & Financial Goals</h2>
+            <p className="text-muted-foreground">
+              Set household budgets, track progress, and achieve financial goals together
+            </p>
+          </div>
+
+          {/* Admin Actions */}
+          {userData?.isAdmin && (
+            <div className="flex justify-center gap-4">
+              <Button 
+                onClick={handleOpenBudgetDialog}
+                className="flex items-center gap-2"
+              >
+                <DollarSign className="h-4 w-4" />
+                Set Budget
+              </Button>
+              <Button 
+                onClick={handleOpenGoalDialog}
+                className="flex items-center gap-2"
+                variant="outline"
+              >
+                <Plus className="h-4 w-4" />
+                Add Goal
+              </Button>
+            </div>
+          )}
+
+          {/* Current Budget Status */}
+          {householdBudget && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  Current Budget Status
+                </CardTitle>
+                <CardDescription>
+                  Monthly budget: ₹{householdBudget.monthlyBudget?.toLocaleString() || '0'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="text-center">
+                    <p className="text-muted-foreground text-sm">Monthly Budget</p>
+                    <p className="font-bold text-blue-600 text-2xl">
+                      ₹{householdBudget.monthlyBudget?.toLocaleString() || '0'}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-muted-foreground text-sm">Monthly Spent</p>
+                    <p className="font-bold text-red-600 text-2xl">
+                      ₹{monthlyExpenses.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-muted-foreground text-sm">Remaining</p>
+                    <p className={`font-bold text-2xl ${
+                      (householdBudget.monthlyBudget || 0) - monthlyExpenses >= 0 
+                        ? 'text-green-600' 
+                        : 'text-red-600'
+                    }`}>
+                      ₹{((householdBudget.monthlyBudget || 0) - monthlyExpenses).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Budget Progress Bar */}
+                <div className="mt-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium">Budget Usage</span>
+                    <span className="text-sm text-muted-foreground">
+                      {householdBudget.monthlyBudget ? 
+                        Math.round((monthlyExpenses / householdBudget.monthlyBudget) * 100) : 0
+                      }%
+                    </span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-3">
+                    <div 
+                      className={`h-3 rounded-full transition-all duration-300 ${
+                        (householdBudget.monthlyBudget || 0) - monthlyExpenses >= 0 
+                          ? 'bg-green-600' 
+                          : 'bg-red-600'
+                      }`}
+                      style={{ 
+                        width: `${Math.min(
+                          householdBudget.monthlyBudget ? 
+                            (monthlyExpenses / householdBudget.monthlyBudget) * 100 : 0, 
+                          100
+                        )}%` 
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+
+
+          {/* Budget Progress Analytics */}
+          {budgetProgress && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Budget Progress Analytics
+                </CardTitle>
+                <CardDescription>
+                  Real-time tracking of spending patterns and projections
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Daily Averages */}
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-center">Daily Averages</h4>
+                    <div className="text-center">
+                      <p className="text-muted-foreground text-sm">Expenses</p>
+                      <p className="font-bold text-red-600 text-xl">
+                        ₹{budgetProgress.current.daily.expenses.toFixed(0)}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-muted-foreground text-sm">Income</p>
+                      <p className="font-bold text-green-600 text-xl">
+                        ₹{budgetProgress.current.daily.income.toFixed(0)}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Weekly Averages */}
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-center">Weekly Averages</h4>
+                    <div className="text-center">
+                      <p className="text-muted-foreground text-sm">Expenses</p>
+                      <p className="font-bold text-red-600 text-xl">
+                        ₹{budgetProgress.current.weekly.expenses.toFixed(0)}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-muted-foreground text-sm">Income</p>
+                      <p className="font-bold text-green-600 text-xl">
+                        ₹{budgetProgress.current.weekly.income.toFixed(0)}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Monthly Projections */}
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-center">Monthly Projections</h4>
+                    <div className="text-center">
+                      <p className="text-muted-foreground text-sm">Expenses</p>
+                      <p className="font-bold text-red-600 text-xl">
+                        ₹{budgetProgress.projected.monthly.expenses.toFixed(0)}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-muted-foreground text-sm">Savings</p>
+                      <p className={`font-bold text-xl ${
+                        budgetProgress.projected.monthly.savings >= 0 ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        ₹{budgetProgress.projected.monthly.savings.toFixed(0)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Savings Rate */}
+                <div className="mt-6 pt-6 border-t">
+                  <div className="text-center">
+                    <h4 className="font-semibold mb-2">Current Savings Rate</h4>
+                    <p className={`text-3xl font-bold ${
+                      budgetProgress.savings.rate >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {budgetProgress.savings.rate.toFixed(1)}%
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {budgetProgress.savings.current >= 0 ? 'Positive' : 'Negative'} savings this month
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Financial Goals */}
+          {budgetGoals.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Plus className="h-5 w-5" />
+                  Financial Goals
+                </CardTitle>
+                <CardDescription>
+                  Track progress towards your household financial objectives
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {budgetGoals.map((goal) => (
+                    <div key={goal.id} className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h4 className="font-semibold">{goal.title}</h4>
+                          {goal.description && (
+                            <p className="text-sm text-muted-foreground">{goal.description}</p>
+                          )}
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="text-xs">
+                              {goal.type.charAt(0).toUpperCase() + goal.type.slice(1)}
+                            </Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              {goal.status}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-muted-foreground">Target</p>
+                          <p className="font-bold text-lg">₹{goal.targetAmount.toLocaleString()}</p>
+                        </div>
+                      </div>
+                      
+                      {/* Progress Bar */}
+                      <div className="mb-3">
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-sm text-muted-foreground">Progress</span>
+                          <span className="text-sm font-medium">
+                            {Math.round((goal.currentAmount / goal.targetAmount) * 100)}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-2">
+                          <div 
+                            className="bg-primary h-2 rounded-full transition-all duration-300"
+                            style={{ 
+                              width: `${Math.min((goal.currentAmount / goal.targetAmount) * 100, 100)}%` 
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                      
+                      {/* Goal Details */}
+                      <div className="grid grid-cols-3 gap-4 text-center text-sm">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Monthly Target</p>
+                          <p className="font-semibold">₹{goal.monthlyTarget.toFixed(0)}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Weekly Target</p>
+                          <p className="font-semibold">₹{goal.weeklyTarget.toFixed(0)}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Daily Target</p>
+                          <p className="font-semibold">₹{goal.dailyTarget.toFixed(0)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* No Budget Set Message */}
+          {!householdBudget && (
+            <Card className="text-center py-12">
+              <CardContent>
+                <div className="space-y-4">
+                  <DollarSign className="mx-auto h-16 w-16 text-muted-foreground" />
+                  <div>
+                    <h3 className="text-lg font-semibold">No Budget Set Yet</h3>
+                    <p className="text-muted-foreground">
+                      {userData?.isAdmin 
+                        ? "Set a household budget to start tracking spending and achieving financial goals."
+                        : "Ask your household admin to set up a budget and financial goals."
+                      }
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
         <TabsContent value="members" className="space-y-6">
           <Card>
             <CardHeader>
@@ -1469,7 +1963,7 @@ export default function HouseholdPage() {
                               </Badge>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-xs font-bold text-muted-foreground">
                             {member.email}
                           </p>
                         </div>
@@ -1559,6 +2053,177 @@ export default function HouseholdPage() {
         </TabsContent>
       </Tabs>
 
+      {/* Set Household Budget Dialog */}
+      {showBudgetDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Set Budget</h3>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="monthlyBudget" className="block text-sm font-medium mb-2">
+                  Monthly Budget (₹)
+                </label>
+                <input
+                  id="monthlyBudget"
+                  type="number"
+                  placeholder="Enter monthly budget amount"
+                  className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary mobile-input"
+                  value={tempBudget.monthlyBudget || ''}
+                  onChange={(e) => setTempBudget(prev => ({ 
+                    ...prev, 
+                    monthlyBudget: parseFloat(e.target.value) || 0 
+                  }))}
+                />
+              </div>
+              <div>
+                <label htmlFor="budgetDescription" className="block text-sm font-medium mb-2">
+                  Budget Description (Optional)
+                </label>
+                <textarea
+                  id="budgetDescription"
+                  placeholder="Describe your budget strategy or categories"
+                  className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary mobile-input"
+                  rows={3}
+                  value={tempBudget.description || ''}
+                  onChange={(e) => setTempBudget(prev => ({ 
+                    ...prev, 
+                    description: e.target.value 
+                  }))}
+                />
+              </div>
+              <div className="flex gap-3">
+                <Button 
+                  onClick={() => handleSetHouseholdBudget(tempBudget)} 
+                  className="flex-1"
+                  disabled={!tempBudget.monthlyBudget || tempBudget.monthlyBudget <= 0}
+                >
+                  Set Budget
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowBudgetDialog(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Financial Goal Dialog */}
+      {showGoalDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4">Add Goal</h3>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="goalTitle" className="block text-sm font-medium mb-2">
+                  Goal Title
+                </label>
+                <input
+                  id="goalTitle"
+                  type="text"
+                  placeholder="e.g., Save for vacation, Emergency fund"
+                  className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary mobile-input"
+                  value={tempGoal.title || ''}
+                  onChange={(e) => setTempGoal(prev => ({ 
+                    ...prev, 
+                    title: e.target.value 
+                  }))}
+                />
+              </div>
+              <div>
+                <label htmlFor="goalDescription" className="block text-sm font-medium mb-2">
+                  Description
+                </label>
+                <textarea
+                  id="goalDescription"
+                  placeholder="Describe your financial goal"
+                  className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary mobile-input"
+                  rows={2}
+                  value={tempGoal.description || ''}
+                  onChange={(e) => setTempGoal(prev => ({ 
+                    ...prev, 
+                    description: e.target.value 
+                  }))}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="goalType" className="block text-sm font-medium mb-2">
+                    Goal Type
+                  </label>
+                  <select
+                    id="goalType"
+                    className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary mobile-input"
+                    value={tempGoal.type || 'savings'}
+                    onChange={(e) => setTempGoal(prev => ({ 
+                      ...prev, 
+                      type: e.target.value as 'savings' | 'debt' | 'investment' | 'expense' 
+                    }))}
+                  >
+                    <option value="savings">Savings</option>
+                    <option value="debt">Debt Reduction</option>
+                    <option value="investment">Investment</option>
+                    <option value="expense">Expense Control</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="goalTargetAmount" className="block text-sm font-medium mb-2">
+                    Target Amount (₹)
+                  </label>
+                  <input
+                    id="goalTargetAmount"
+                    type="number"
+                    placeholder="Total goal amount"
+                    className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary mobile-input"
+                    value={tempGoal.targetAmount || ''}
+                    onChange={(e) => {
+                      const amount = parseFloat(e.target.value) || 0;
+                      const monthlyTarget = amount / 12;
+                      const weeklyTarget = amount / 52;
+                      const dailyTarget = amount / 365;
+                      
+                      setTempGoal(prev => ({ 
+                        ...prev, 
+                        targetAmount: amount,
+                        monthlyTarget,
+                        weeklyTarget,
+                        dailyTarget
+                      }));
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button 
+                  onClick={() => {
+                    if (tempGoal.title && tempGoal.targetAmount) {
+                      handleSetBudgetGoal(tempGoal);
+                    }
+                  }} 
+                  className="flex-1"
+                  disabled={!tempGoal.title || !tempGoal.targetAmount}
+                >
+                  Add Goal
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowGoalDialog(false);
+                    setTempGoal({});
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

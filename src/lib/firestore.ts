@@ -13,7 +13,7 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Transaction, Expense, Income, Budget, Category } from './types';
+import { Transaction, Expense, Income, Budget, Category, HouseholdBudget, BudgetGoal } from './types';
 
 export interface UserData {
   id?: string; // User ID from Firestore document
@@ -807,5 +807,105 @@ export class FirestoreService {
       householdRemovedBy: existing.householdRemovedBy || undefined,
       householdRemovedAt: existing.householdRemovedAt || undefined,
     };
+  }
+
+  // Budget and Goals operations
+  static async setHouseholdBudget(householdId: string, budgetData: Partial<HouseholdBudget>): Promise<void> {
+    try {
+      const budgetRef = doc(db, 'households', householdId, 'budgets', 'current');
+      await setDoc(budgetRef, {
+        ...budgetData,
+        householdId,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+      
+      console.log('Household budget set successfully:', budgetData);
+    } catch (error) {
+      console.error('Error setting household budget:', error);
+      throw error;
+    }
+  }
+
+  static async getHouseholdBudget(householdId: string): Promise<HouseholdBudget | null> {
+    try {
+      const budgetRef = doc(db, 'households', householdId, 'budgets', 'current');
+      const budgetSnap = await getDoc(budgetRef);
+      
+      if (budgetSnap.exists()) {
+        const data = budgetSnap.data();
+        return {
+          ...data,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+        } as HouseholdBudget;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting household budget:', error);
+      throw error;
+    }
+  }
+
+  static async setBudgetGoal(householdId: string, goalData: Partial<BudgetGoal>): Promise<string> {
+    try {
+      const goalsRef = collection(db, 'households', householdId, 'goals');
+      const goalDoc = await addDoc(goalsRef, {
+        ...goalData,
+        householdId,
+        currentAmount: 0,
+        status: 'active',
+        startDate: serverTimestamp(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      
+      console.log('Budget goal set successfully:', goalData);
+      return goalDoc.id;
+    } catch (error) {
+      console.error('Error setting budget goal:', error);
+      throw error;
+    }
+  }
+
+  static async getHouseholdGoals(householdId: string): Promise<BudgetGoal[]> {
+    try {
+      const goalsRef = collection(db, 'households', householdId, 'goals');
+      const goalsQuery = query(goalsRef, where('status', '==', 'active'));
+      const goalsSnap = await getDocs(goalsQuery);
+      
+      const goals: BudgetGoal[] = [];
+      goalsSnap.forEach(doc => {
+        const data = doc.data();
+        goals.push({
+          ...data,
+          id: doc.id,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date(),
+          startDate: data.startDate?.toDate() || new Date(),
+          targetDate: data.targetDate?.toDate(),
+        } as BudgetGoal);
+      });
+      
+      return goals;
+    } catch (error) {
+      console.error('Error getting household goals:', error);
+      throw error;
+    }
+  }
+
+  static async updateGoalProgress(householdId: string, goalId: string, currentAmount: number): Promise<void> {
+    try {
+      const goalRef = doc(db, 'households', householdId, 'goals', goalId);
+      await updateDoc(goalRef, {
+        currentAmount,
+        updatedAt: serverTimestamp(),
+      });
+      
+      console.log('Goal progress updated successfully:', { goalId, currentAmount });
+    } catch (error) {
+      console.error('Error updating goal progress:', error);
+      throw error;
+    }
   }
 }
