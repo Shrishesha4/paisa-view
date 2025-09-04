@@ -117,7 +117,6 @@ export default function HouseholdPage() {
         }
         
         if (hasChanges) {
-          console.log('🔄 Household data has changed, silently refreshing...');
           // Update state without showing toast
           setHouseholdMembers(freshHouseholdData);
           calculateAggregatedFinances(freshHouseholdData);
@@ -161,28 +160,15 @@ export default function HouseholdPage() {
       }
       
       if (data?.householdId) {
-        console.log('🏠 Loading household data for householdId:', data.householdId);
-        
         // Load household data
         const householdData = await FirestoreService.getHouseholdData(data.householdId);
-        console.log('👥 Household members data loaded:', householdData);
         setHouseholdMembers(householdData);
         
         // Load household details
         const householdDoc = await FirestoreService.getHousehold(data.householdId);
-        console.log('🏠 Household document loaded:', householdDoc);
         setHousehold(householdDoc);
         
         // Calculate aggregated financial data
-        console.log('🧮 Starting financial aggregation...');
-        console.log('📊 Household members data for aggregation:', householdData.map(m => ({
-          id: m.id,
-          displayName: m.displayName,
-          expensesCount: m.expenses?.length || 0,
-          incomesCount: m.incomes?.length || 0,
-          totalExpenses: m.expenses?.reduce((sum, exp) => sum + exp.amount, 0) || 0,
-          totalIncome: m.incomes?.reduce((sum, inc) => sum + inc.amount, 0) || 0
-        })));
         calculateAggregatedFinances(householdData);
         
         // Load budget and goals data
@@ -203,8 +189,6 @@ export default function HouseholdPage() {
 
 
   const calculateAggregatedFinances = (members: UserData[]) => {
-    console.log('🔍 Calculating aggregated finances for members:', members);
-    
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
@@ -214,25 +198,10 @@ export default function HouseholdPage() {
     let monthlyExp = 0;
     let monthlyInc = 0;
     
-    members.forEach((member, index) => {
-      console.log(`👤 Member ${index + 1}:`, {
-        id: member.id,
-        email: member.email,
-        displayName: member.displayName,
-        expensesCount: member.expenses?.length || 0,
-        incomesCount: member.incomes?.length || 0,
-        expenses: member.expenses?.slice(0, 3), // Show first 3 expenses
-        incomes: member.incomes?.slice(0, 3),   // Show first 3 incomes
-      });
-      
+    members.forEach((member) => {
       // Calculate total expenses and income
       const memberExpenses = member.expenses?.reduce((sum, exp) => sum + exp.amount, 0) || 0;
       const memberIncome = member.incomes?.reduce((sum, inc) => sum + inc.amount, 0) || 0;
-      
-      console.log(`💰 Member ${index + 1} totals:`, {
-        expenses: memberExpenses,
-        income: memberIncome
-      });
       
       totalExp += memberExpenses;
       totalInc += memberIncome;
@@ -252,12 +221,7 @@ export default function HouseholdPage() {
       monthlyInc += currentMonthIncome;
     });
     
-    console.log('📊 Final aggregated totals:', {
-      totalExpenses: totalExp,
-      totalIncome: totalInc,
-      monthlyExpenses: monthlyExp,
-      monthlyIncome: monthlyInc
-    });
+
     
     setTotalExpenses(totalExp);
     setTotalIncome(totalInc);
@@ -592,8 +556,6 @@ export default function HouseholdPage() {
       // Load goals data
       const goals = await FirestoreService.getHouseholdGoals(householdId);
       setBudgetGoals(goals);
-      
-      console.log('Budget and goals data loaded:', { budget, goals });
     } catch (error) {
       console.error('Error loading budget and goals data:', error);
     }
@@ -624,11 +586,8 @@ export default function HouseholdPage() {
     
     try {
       setLoading(true);
-      console.log('🔄 Manually refreshing household data...');
-      
       // Force a fresh fetch from Firestore
       const freshData = await FirestoreService.getHouseholdData(userData.householdId);
-      console.log('🆕 Fresh household data fetched:', freshData);
       
       setHouseholdMembers(freshData);
       calculateAggregatedFinances(freshData);
@@ -662,7 +621,7 @@ export default function HouseholdPage() {
     
     try {
       setLoading(true);
-      console.log('🔄 Force refreshing household data...');
+
       
       // Get fresh data directly instead of calling loadHouseholdData
       const freshHouseholdData = await FirestoreService.getHouseholdData(userData.householdId);
@@ -691,26 +650,18 @@ export default function HouseholdPage() {
   };
 
   const handleCreateHousehold = async () => {
-    console.log('🔧 Create household button clicked');
-    console.log('👤 User:', user);
-    console.log('🏠 Household name:', householdName);
-    
     if (!user || !householdName.trim()) {
-      console.log('❌ Validation failed:', { user: !!user, householdName: householdName.trim() });
       return;
     }
     
     setLoading(true);
     try {
-      console.log('🚀 Creating household...');
       await FirestoreService.createHousehold(
         householdName.trim(), 
         user.uid, 
         user.email || undefined, 
         user.displayName || undefined
       );
-      
-      console.log('✅ Household created successfully');
       toast({
         title: "Household Created!",
         description: "Your household has been created successfully. You are now the admin.",
@@ -745,14 +696,10 @@ export default function HouseholdPage() {
     
     setLoading(true);
     try {
-      console.log('🔍 Finding household by name...');
       // First find the household by name
       const householdId = await FirestoreService.findHouseholdByName(joinHouseholdName.trim());
       
-      console.log('🏠 Found household ID:', householdId);
-      
       if (!householdId) {
-        console.log('❌ Household not found');
         toast({
           title: "Household Not Found",
           description: "No household found with that name. Please check the name and try again.",
@@ -761,7 +708,6 @@ export default function HouseholdPage() {
         return;
       }
       
-      console.log('📤 Sending join request...');
       // Send join request
       await FirestoreService.sendJoinRequest(
         householdId, 
@@ -769,8 +715,6 @@ export default function HouseholdPage() {
         user.email || '', 
         user.displayName || undefined
       );
-      
-      console.log('✅ Join request sent successfully');
       toast({
         title: "Join Request Sent!",
         description: "Your request has been sent to the household admin. You'll be notified when it's approved or rejected.",
@@ -998,10 +942,7 @@ export default function HouseholdPage() {
                 Join an existing household by entering the household name. Your request will be sent to the admin.
               </p>
               <Button 
-                onClick={() => {
-                  console.log('🔧 Join button clicked, setting showJoinDialog to true');
-                  setShowJoinDialog(true);
-                }} 
+                onClick={() => setShowJoinDialog(true)}
                 variant="outline" 
                 size="lg" 
                 className="w-full"

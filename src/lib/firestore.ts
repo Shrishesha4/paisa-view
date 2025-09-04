@@ -61,9 +61,6 @@ export class FirestoreService {
         Object.entries(data).filter(([_, value]) => value !== undefined)
       );
       
-      console.log('🧹 Cleaning data before Firestore sync:', cleanData);
-      console.log('🔍 Removed undefined fields:', Object.entries(data).filter(([k, v]) => v === undefined).map(([k]) => k));
-      
       const userRef = doc(db, 'users', userId);
       await setDoc(userRef, {
         ...cleanData,
@@ -97,8 +94,6 @@ export class FirestoreService {
   // Household operations
   static async createHousehold(name: string, adminId: string, userEmail?: string, userDisplayName?: string): Promise<string> {
     try {
-      console.log('Creating household with:', { name, adminId, userEmail, userDisplayName });
-      
       const householdRef = doc(collection(db, 'households'));
       const household = {
         name,
@@ -106,11 +101,7 @@ export class FirestoreService {
         members: [adminId],
       };
       
-      console.log('Household data to send:', household);
-      console.log('Household ref:', householdRef.path);
-      
       await setDoc(householdRef, household);
-      console.log('Household created successfully');
       
       // Create or update user's householdId
       const userRef = doc(db, 'users', adminId);
@@ -126,11 +117,7 @@ export class FirestoreService {
         lastSync: serverTimestamp(),
       };
       
-      console.log('User data to send:', userData);
-      console.log('User ref:', userRef.path);
-      
       await setDoc(userRef, userData, { merge: true });
-      console.log('User updated successfully');
       
       return householdRef.id;
     } catch (error: any) {
@@ -146,15 +133,9 @@ export class FirestoreService {
 
   static async joinHousehold(householdId: string, userId: string, userEmail?: string, userDisplayName?: string): Promise<void> {
     try {
-      console.log('Joining household:', { householdId, userId, userEmail, userDisplayName });
-      
       // Validate inputs
       if (!householdId || !userId) {
         throw new Error('Invalid household ID or user ID');
-      }
-      
-      if (userId.length < 10) {
-        console.warn('User ID seems unusually short:', userId);
       }
       
       const householdRef = doc(db, 'households', householdId);
@@ -165,15 +146,11 @@ export class FirestoreService {
       }
       
       const household = householdSnap.data() as Household;
-      console.log('Household data:', household);
       
       if (!household.members.includes(userId)) {
-        console.log('Adding user to household members');
         await updateDoc(householdRef, {
           members: [...household.members, userId],
         });
-      } else {
-        console.log('User already in household members');
       }
       
       // Create or update user's householdId
@@ -190,11 +167,7 @@ export class FirestoreService {
         lastSync: serverTimestamp(),
       };
       
-      console.log('Creating/updating user document:', userData);
-      console.log('User ref path:', userRef.path);
-      
       await setDoc(userRef, userData, { merge: true });
-      console.log('User document updated successfully');
       
     } catch (error: any) {
       console.error('Error joining household:', error);
@@ -212,11 +185,8 @@ export class FirestoreService {
       // First get the household to see the current members list
       const household = await this.getHousehold(householdId);
       if (!household) {
-        console.log('Household not found for getHouseholdData:', householdId);
         return [];
       }
-      
-      console.log('Getting household data for members:', household.members);
       
       // Query users by householdId to get current household members
       const usersRef = collection(db, 'users');
@@ -232,8 +202,6 @@ export class FirestoreService {
           lastSync: data.lastSync?.toDate() || new Date(),
         } as UserData);
       });
-      
-      console.log('Found household members:', householdData.map(u => ({ id: u.id, email: u.email, householdId: u.householdId })));
       
       return householdData;
     } catch (error) {
@@ -283,8 +251,6 @@ export class FirestoreService {
   // Join request methods
   static async sendJoinRequest(householdId: string, userId: string, userEmail: string, userDisplayName?: string): Promise<void> {
     try {
-      console.log('Sending join request:', { householdId, userId, userEmail, userDisplayName });
-      
       // Check if user already has a pending request
       const existingRequest = await this.getPendingJoinRequest(householdId, userId);
       if (existingRequest) {
@@ -308,7 +274,6 @@ export class FirestoreService {
       };
       
       await addDoc(requestsRef, newRequest);
-      console.log('Join request sent successfully');
     } catch (error) {
       console.error('Error sending join request:', error);
       throw error;
