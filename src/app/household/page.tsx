@@ -40,7 +40,7 @@ export default function HouseholdPage() {
   const [household, setHousehold] = useState<Household | null>(null);
   const [householdMembers, setHouseholdMembers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"overview" | "monthly" | "members">("overview");
+  const [view, setView] = useState<"overview" | "monthly" | "reports" | "members">("overview");
   
   // Aggregated financial data
   const [totalExpenses, setTotalExpenses] = useState(0);
@@ -54,6 +54,11 @@ export default function HouseholdPage() {
   const [showJoinDialog, setShowJoinDialog] = useState(false);
   const [householdName, setHouseholdName] = useState('');
   const [joinHouseholdName, setJoinHouseholdName] = useState('');
+  
+  // Reports data
+  const [monthlyComparisons, setMonthlyComparisons] = useState<any[]>([]);
+  const [yearlyComparisons, setYearlyComparisons] = useState<any[]>([]);
+  const [financialYearData, setFinancialYearData] = useState<any>(null);
 
   // Calculated values
   const totalSavings = totalIncome - totalExpenses;
@@ -103,6 +108,11 @@ export default function HouseholdPage() {
           // Update state without showing toast
           setHouseholdMembers(freshHouseholdData);
           calculateAggregatedFinances(freshHouseholdData);
+          
+          // Also calculate reports data
+          if (freshHouseholdData.length > 0) {
+            calculateReportsData(freshHouseholdData);
+          }
         }
       } catch (error) {
         console.error('Error in silent data refresh:', error);
@@ -244,6 +254,167 @@ export default function HouseholdPage() {
     setMonthlyExpenses(monthlyExp);
     setMonthlyIncome(monthlyInc);
     setLastUpdated(new Date());
+    
+    // Calculate reports data if we have enough data
+    if (members.length > 0) {
+      calculateReportsData(members);
+    }
+  };
+
+  const calculateReportsData = (members: UserData[]) => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const currentDate = now.getDate();
+    
+    // Get all expenses and incomes across all members
+    const allExpenses = members.flatMap(member => member.expenses || []);
+    const allIncomes = members.flatMap(member => member.incomes || []);
+    
+    // Calculate month-to-date vs previous month-to-date
+    const calculateMonthToDate = (month: number, year: number, endDate: number) => {
+      let expenses = 0;
+      let income = 0;
+      
+      allExpenses.forEach(exp => {
+        const date = new Date(exp.date);
+        if (date.getMonth() === month && date.getFullYear() === year && date.getDate() <= endDate) {
+          expenses += exp.amount;
+        }
+      });
+      
+      allIncomes.forEach(inc => {
+        const date = new Date(inc.date);
+        if (date.getMonth() === month && date.getFullYear() === year && date.getDate() <= endDate) {
+          income += inc.amount;
+        }
+      });
+      
+      return { expenses, income };
+    };
+    
+    // Get current month-to-date data
+    const currentMonthData = calculateMonthToDate(currentMonth, currentYear, currentDate);
+    
+    // Get previous month-to-date data (same date range)
+    const previousMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+    const previousYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+    const previousMonthData = calculateMonthToDate(previousMonth, previousYear, currentDate);
+    
+    // Calculate month-over-month comparisons with same-date logic
+    if (currentMonthData.expenses > 0 || currentMonthData.income > 0 || previousMonthData.expenses > 0 || previousMonthData.income > 0) {
+      const expenseChange = previousMonthData.expenses > 0 ? 
+        ((currentMonthData.expenses - previousMonthData.expenses) / previousMonthData.expenses) * 100 : 0;
+      const incomeChange = previousMonthData.income > 0 ? 
+        ((currentMonthData.income - previousMonthData.income) / previousMonthData.income) * 100 : 0;
+      
+      const currentMonthName = new Date(currentYear, currentMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      const previousMonthName = new Date(previousYear, previousMonth).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      
+      setMonthlyComparisons([{
+        month: currentMonth,
+        year: currentYear,
+        monthName: currentMonthName,
+        previousMonthName: previousMonthName,
+        expenses: currentMonthData.expenses,
+        income: currentMonthData.income,
+        savings: currentMonthData.income - currentMonthData.expenses,
+        expenseChange,
+        incomeChange,
+        isExpenseIncrease: expenseChange > 0,
+        isIncomeIncrease: incomeChange > 0,
+        isCurrentMonth: true,
+        comparisonType: `Month-to-Date (1-${currentDate}) vs Previous Month (1-${currentDate})`,
+        previousMonthExpenses: previousMonthData.expenses,
+        previousMonthIncome: previousMonthData.income
+      }]);
+    } else {
+      setMonthlyComparisons([]);
+    }
+    
+    // Calculate yearly comparisons using full month data
+    const yearlyData: { [key: number]: { expenses: number; income: number } } = {};
+    
+    // Group all expenses and incomes by year
+    allExpenses.forEach(exp => {
+      const date = new Date(exp.date);
+      const year = date.getFullYear();
+      if (!yearlyData[year]) {
+        yearlyData[year] = { expenses: 0, income: 0 };
+      }
+      yearlyData[year].expenses += exp.amount;
+    });
+    
+    allIncomes.forEach(inc => {
+      const date = new Date(inc.date);
+      const year = date.getFullYear();
+      if (!yearlyData[year]) {
+        yearlyData[year] = { expenses: 0, income: 0 };
+      }
+      yearlyData[year].income += inc.amount;
+    });
+    
+    const sortedYears = Object.entries(yearlyData)
+      .map(([year, data]) => ({ year: parseInt(year), ...data }))
+      .sort((a, b) => a.year - b.year);
+    
+    if (sortedYears.length >= 2) {
+      const yearlyComparisons = [];
+      for (let i = 1; i < sortedYears.length; i++) {
+        const current = sortedYears[i];
+        const previous = sortedYears[i - 1];
+        
+        const expenseChange = previous.expenses > 0 ? ((current.expenses - previous.expenses) / previous.expenses) * 100 : 0;
+        const incomeChange = previous.income > 0 ? ((current.income - previous.income) / previous.income) * 100 : 0;
+        
+        yearlyComparisons.push({
+          year: current.year,
+          expenses: current.expenses,
+          income: current.income,
+          savings: current.income - current.expenses,
+          expenseChange,
+          incomeChange,
+          isExpenseIncrease: expenseChange > 0,
+          isIncomeIncrease: incomeChange > 0
+        });
+      }
+      setYearlyComparisons(yearlyComparisons);
+    }
+    
+    // Calculate financial year data (April to March)
+    const financialYearStart = currentMonth >= 3 ? currentYear : currentYear - 1;
+    const financialYearEnd = financialYearStart + 1;
+    
+    let fyExpenses = 0;
+    let fyIncome = 0;
+    
+    // Calculate financial year totals from all data
+    allExpenses.forEach(exp => {
+      const date = new Date(exp.date);
+      if (date.getFullYear() === financialYearStart && date.getMonth() >= 3) {
+        fyExpenses += exp.amount;
+      } else if (date.getFullYear() === financialYearEnd && date.getMonth() < 3) {
+        fyExpenses += exp.amount;
+      }
+    });
+    
+    allIncomes.forEach(inc => {
+      const date = new Date(inc.date);
+      if (date.getFullYear() === financialYearStart && date.getMonth() >= 3) {
+        fyIncome += inc.amount;
+      } else if (date.getFullYear() === financialYearEnd && date.getMonth() < 3) {
+        fyIncome += inc.amount;
+      }
+    });
+    
+    setFinancialYearData({
+      startYear: financialYearStart,
+      endYear: financialYearEnd,
+      expenses: fyExpenses,
+      income: fyIncome,
+      savings: fyIncome - fyExpenses,
+      savingsRate: fyIncome > 0 ? ((fyIncome - fyExpenses) / fyIncome) * 100 : 0
+    });
   };
 
   const handleLeaveHousehold = async () => {
@@ -280,6 +451,11 @@ export default function HouseholdPage() {
       setHouseholdMembers(freshData);
       calculateAggregatedFinances(freshData);
       
+      // Also calculate reports data
+      if (freshData.length > 0) {
+        calculateReportsData(freshData);
+      }
+      
       toast({
         title: "Data Refreshed",
         description: "Household data has been updated.",
@@ -311,6 +487,11 @@ export default function HouseholdPage() {
       setHouseholdMembers(freshHouseholdData);
       calculateAggregatedFinances(freshHouseholdData);
       
+      // Also calculate reports data
+      if (freshHouseholdData.length > 0) {
+        calculateReportsData(freshHouseholdData);
+      }
+      
       toast({
         title: "Data Refreshed",
         description: "Household data has been manually refreshed.",
@@ -328,10 +509,18 @@ export default function HouseholdPage() {
   };
 
   const handleCreateHousehold = async () => {
-    if (!user || !householdName.trim()) return;
+    console.log('🔧 Create household button clicked');
+    console.log('👤 User:', user);
+    console.log('🏠 Household name:', householdName);
+    
+    if (!user || !householdName.trim()) {
+      console.log('❌ Validation failed:', { user: !!user, householdName: householdName.trim() });
+      return;
+    }
     
     setLoading(true);
     try {
+      console.log('🚀 Creating household...');
       await FirestoreService.createHousehold(
         householdName.trim(), 
         user.uid, 
@@ -339,6 +528,7 @@ export default function HouseholdPage() {
         user.displayName || undefined
       );
       
+      console.log('✅ Household created successfully');
       toast({
         title: "Household Created!",
         description: "Your household has been created successfully. You are now the admin.",
@@ -350,7 +540,7 @@ export default function HouseholdPage() {
       // Reload household data
       await loadHouseholdData();
     } catch (error: any) {
-      console.error('Error creating household:', error);
+      console.error('❌ Error creating household:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to create household. Please try again.",
@@ -362,14 +552,25 @@ export default function HouseholdPage() {
   };
 
   const handleJoinHousehold = async () => {
-    if (!user || !joinHouseholdName.trim()) return;
+    console.log('🔧 Join household button clicked');
+    console.log('👤 User:', user);
+    console.log('🏠 Join household name:', joinHouseholdName);
+    
+    if (!user || !joinHouseholdName.trim()) {
+      console.log('❌ Validation failed:', { user: !!user, joinHouseholdName: joinHouseholdName.trim() });
+      return;
+    }
     
     setLoading(true);
     try {
+      console.log('🔍 Finding household by name...');
       // First find the household by name
       const householdId = await FirestoreService.findHouseholdByName(joinHouseholdName.trim());
       
+      console.log('🏠 Found household ID:', householdId);
+      
       if (!householdId) {
+        console.log('❌ Household not found');
         toast({
           title: "Household Not Found",
           description: "No household found with that name. Please check the name and try again.",
@@ -378,6 +579,7 @@ export default function HouseholdPage() {
         return;
       }
       
+      console.log('📤 Sending join request...');
       // Send join request
       await FirestoreService.sendJoinRequest(
         householdId, 
@@ -386,6 +588,7 @@ export default function HouseholdPage() {
         user.displayName || undefined
       );
       
+      console.log('✅ Join request sent successfully');
       toast({
         title: "Join Request Sent!",
         description: "Your request has been sent to the household admin. You'll be notified when it's approved or rejected.",
@@ -394,7 +597,7 @@ export default function HouseholdPage() {
       setShowJoinDialog(false);
       setJoinHouseholdName('');
     } catch (error: any) {
-      console.error('Error sending join request:', error);
+      console.error('❌ Error sending join request:', error);
       toast({
         title: "Error",
         description: error.message || "Failed to send join request. Please try again.",
@@ -591,7 +794,10 @@ export default function HouseholdPage() {
                 Start a new household and invite family members to join. You'll be the admin with full control.
               </p>
               <Button 
-                onClick={() => setShowCreateDialog(true)} 
+                onClick={() => {
+                  console.log('🔧 Create button clicked, setting showCreateDialog to true');
+                  setShowCreateDialog(true);
+                }} 
                 size="lg" 
                 className="w-full"
               >
@@ -610,7 +816,10 @@ export default function HouseholdPage() {
                 Join an existing household by entering the household name. Your request will be sent to the admin.
               </p>
               <Button 
-                onClick={() => setShowJoinDialog(true)} 
+                onClick={() => {
+                  console.log('🔧 Join button clicked, setting showJoinDialog to true');
+                  setShowJoinDialog(true);
+                }} 
                 variant="outline" 
                 size="lg" 
                 className="w-full"
@@ -627,7 +836,89 @@ export default function HouseholdPage() {
               Back to Dashboard
             </Button>
           </div>
+          
+
         </div>
+        
+        {/* Create Household Dialog */}
+        {showCreateDialog && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4">Create New Household</h3>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="householdName" className="block text-sm font-medium mb-2">
+                    Household Name
+                  </label>
+                  <input
+                    id="householdName"
+                    type="text"
+                    placeholder="Enter household name"
+                    className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary mobile-input"
+                    value={householdName}
+                    onChange={(e) => setHouseholdName(e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <Button 
+                    onClick={handleCreateHousehold} 
+                    className="flex-1"
+                    disabled={!householdName.trim()}
+                  >
+                    Create
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowCreateDialog(false)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Join Household Dialog */}
+        {showJoinDialog && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+              <h3 className="text-lg font-semibold mb-4">Join Existing Household</h3>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="joinHouseholdName" className="block text-sm font-medium mb-2">
+                    Household Name
+                  </label>
+                  <input
+                    id="joinHouseholdName"
+                    type="text"
+                    placeholder="Enter household name"
+                    className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary mobile-input"
+                    value={joinHouseholdName}
+                    onChange={(e) => setJoinHouseholdName(e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-3">
+                  <Button 
+                    onClick={handleJoinHousehold} 
+                    className="flex-1"
+                    disabled={!joinHouseholdName.trim()}
+                  >
+                    Send Request
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowJoinDialog(false)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -718,9 +1009,10 @@ export default function HouseholdPage() {
       </header>
 
       <Tabs value={view} onValueChange={(value) => setView(value as any)} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="monthly">Monthly</TabsTrigger>
+          <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="members">Members</TabsTrigger>
         </TabsList>
 
@@ -941,6 +1233,233 @@ export default function HouseholdPage() {
           </div>
         </TabsContent>
 
+        <TabsContent value="reports" className="space-y-6">
+          {/* Reports Header */}
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-bold">Financial Reports & Analytics</h2>
+            <p className="text-muted-foreground">
+              {monthlyComparisons.length > 0 || yearlyComparisons.length > 0 
+                ? "Smart month-to-date comparisons and annual financial analysis"
+                : "Reports will be available once you have data from at least 2 months"}
+            </p>
+          </div>
+
+          {/* Month-over-Month Analysis */}
+          {monthlyComparisons.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5" />
+                  Month-to-Date Analysis
+                </CardTitle>
+                <CardDescription>
+                  {monthlyComparisons[0]?.comparisonType || "Compare current month vs previous month"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {monthlyComparisons.map((comparison, index) => (
+                    <div key={index} className="p-4 border rounded-lg bg-muted/30">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h4 className="font-semibold">{comparison.monthName}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            vs {comparison.previousMonthName} (same date range)
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Badge variant={comparison.isExpenseIncrease ? "destructive" : "default"}>
+                            {comparison.isExpenseIncrease ? "↗" : "↘"} Expenses: {comparison.expenseChange.toFixed(1)}%
+                          </Badge>
+                          <Badge variant={comparison.isIncomeIncrease ? "default" : "secondary"}>
+                            {comparison.isIncomeIncrease ? "↗" : "↘"} Income: {comparison.incomeChange.toFixed(1)}%
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      {/* Current Month Data */}
+                      <div className="mb-4">
+                        <h5 className="font-medium text-sm mb-2 text-blue-600">Current Month (1-{new Date().getDate()})</h5>
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <p className="text-muted-foreground">Expenses</p>
+                            <p className="font-semibold text-red-600">₹{comparison.expenses.toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Income</p>
+                            <p className="font-semibold text-green-600">₹{comparison.income.toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Savings</p>
+                            <p className={`font-semibold ${comparison.savings >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                              ₹{comparison.savings.toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Previous Month Comparison */}
+                      <div className="border-t pt-3">
+                        <h5 className="font-medium text-sm mb-2 text-muted-foreground">Previous Month (1-{new Date().getDate()})</h5>
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                          <div>
+                            <p className="text-muted-foreground">Expenses</p>
+                            <p className="font-semibold text-red-600">₹{comparison.previousMonthExpenses?.toLocaleString() || '0'}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Income</p>
+                            <p className="font-semibold text-green-600">₹{comparison.previousMonthIncome?.toLocaleString() || '0'}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Savings</p>
+                            <p className={`font-semibold ${(comparison.previousMonthIncome - comparison.previousMonthExpenses) >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                              ₹{((comparison.previousMonthIncome || 0) - (comparison.previousMonthExpenses || 0)).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Year-over-Year Analysis */}
+          {yearlyComparisons.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  Year-over-Year Analysis
+                </CardTitle>
+                <CardDescription>
+                  Compare annual financial performance
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {yearlyComparisons.map((comparison, index) => (
+                    <div key={index} className="p-4 border rounded-lg bg-muted/30">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-lg">{comparison.year}</h4>
+                        <div className="flex gap-2">
+                          <Badge variant={comparison.isExpenseIncrease ? "destructive" : "default"}>
+                            {comparison.isExpenseIncrease ? "↗" : "↘"} Expenses: {comparison.expenseChange.toFixed(1)}%
+                          </Badge>
+                          <Badge variant={comparison.isIncomeIncrease ? "default" : "secondary"}>
+                            {comparison.isIncomeIncrease ? "↗" : "↘"} Income: {comparison.incomeChange.toFixed(1)}%
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-muted-foreground text-sm">Expenses</p>
+                          <p className="font-semibold text-red-600 text-lg">₹{comparison.expenses.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground text-sm">Income</p>
+                          <p className="font-semibold text-green-600 text-lg">₹{comparison.income.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground text-sm">Savings</p>
+                          <p className={`font-semibold text-lg ${comparison.savings >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                            ₹{comparison.savings.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Financial Year Summary */}
+          {financialYearData && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  Financial Year Summary ({financialYearData.startYear}-{financialYearData.endYear})
+                </CardTitle>
+                <CardDescription>
+                  April {financialYearData.startYear} to March {financialYearData.endYear}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <div className="text-center">
+                    <p className="text-muted-foreground text-sm">Total Expenses</p>
+                    <p className="font-bold text-red-600 text-2xl">₹{financialYearData.expenses.toLocaleString()}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-muted-foreground text-sm">Total Income</p>
+                    <p className="font-bold text-green-600 text-2xl">₹{financialYearData.income.toLocaleString()}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-muted-foreground text-sm">Net Savings</p>
+                    <p className={`font-bold text-2xl ${financialYearData.savings >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                      ₹{financialYearData.savings.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-muted-foreground text-sm">Savings Rate</p>
+                    <p className={`font-bold text-2xl ${financialYearData.savingsRate >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                      {financialYearData.savingsRate.toFixed(1)}%
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Progress bar for savings rate */}
+                <div className="mt-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-medium">Savings Rate Progress</span>
+                    <span className="text-sm text-muted-foreground">{financialYearData.savingsRate.toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-3">
+                    <div 
+                      className={`h-3 rounded-full transition-all duration-300 ${
+                        financialYearData.savingsRate >= 0 ? 'bg-blue-600' : 'bg-red-600'
+                      }`}
+                      style={{ 
+                        width: `${Math.min(Math.abs(financialYearData.savingsRate), 100)}%` 
+                      }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                    <span>0%</span>
+                    <span>25%</span>
+                    <span>50%</span>
+                    <span>75%</span>
+                    <span>100%</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* No Data Message */}
+          {monthlyComparisons.length === 0 && yearlyComparisons.length === 0 && (
+            <Card className="text-center py-12">
+              <CardContent>
+                <div className="space-y-4">
+                  <TrendingUp className="mx-auto h-16 w-16 text-muted-foreground" />
+                  <div>
+                    <h3 className="text-lg font-semibold">No Reports Available Yet</h3>
+                    <p className="text-muted-foreground">
+                      Reports require data from at least 2 months to generate meaningful comparisons.
+                      <br />
+                      Continue adding expenses and income to see detailed financial analytics.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
         <TabsContent value="members" className="space-y-6">
           <Card>
             <CardHeader>
@@ -1066,85 +1585,7 @@ export default function HouseholdPage() {
         </TabsContent>
       </Tabs>
 
-      {/* Create Household Dialog */}
-      {showCreateDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Create New Household</h3>
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="householdName" className="block text-sm font-medium mb-2">
-                  Household Name
-                </label>
-                <input
-                  id="householdName"
-                  type="text"
-                  placeholder="Enter household name"
-                  className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary mobile-input"
-                  value={householdName}
-                  onChange={(e) => setHouseholdName(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-3">
-                <Button 
-                  onClick={handleCreateHousehold} 
-                  className="flex-1"
-                  disabled={!householdName.trim()}
-                >
-                  Create
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowCreateDialog(false)}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Join Household Dialog */}
-      {showJoinDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-background p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">Join Existing Household</h3>
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="joinHouseholdName" className="block text-sm font-medium mb-2">
-                  Household Name
-                </label>
-                <input
-                  id="joinHouseholdName"
-                  type="text"
-                  placeholder="Enter household name"
-                  className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-primary mobile-input"
-                  value={joinHouseholdName}
-                  onChange={(e) => setJoinHouseholdName(e.target.value)}
-                />
-              </div>
-              <div className="flex gap-3">
-                <Button 
-                  onClick={handleJoinHousehold} 
-                  className="flex-1"
-                  disabled={!joinHouseholdName.trim()}
-                >
-                  Send Request
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowJoinDialog(false)}
-                  className="flex-1"
-                >
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
