@@ -45,7 +45,7 @@ class OfflineSyncManager {
   private isSyncing: boolean = false;
   private lastSyncAttempt: Date | null = null;
   private lastSuccessfulSync: Date | null = null;
-  private syncInterval: NodeJS.Timeout | null = null;
+  private syncInterval: ReturnType<typeof setInterval> | null = null;
   private retryDelay: number = 5000; // 5 seconds
   private maxRetries: number = 3;
   private syncErrors: Array<{
@@ -446,7 +446,11 @@ class OfflineSyncManager {
       
       // Update local data based on sync item
       if (item.action === 'create') {
-        localExpenses.push(item.data);
+        // Check if expense already exists to prevent duplicates
+        const existingIndex = localExpenses.findIndex((e: Expense) => e.id === (item.data as Expense).id);
+        if (existingIndex === -1) {
+          localExpenses.push(item.data);
+        }
       } else if (item.action === 'update') {
         const index = localExpenses.findIndex((e: Expense) => e.id === (item.data as Expense).id);
         if (index !== -1) {
@@ -503,7 +507,11 @@ class OfflineSyncManager {
       
       // Update local data based on sync item
       if (item.action === 'create') {
-        localIncomes.push(item.data);
+        // Check if income already exists to prevent duplicates
+        const existingIndex = localIncomes.findIndex((i: Income) => i.id === (item.data as Income).id);
+        if (existingIndex === -1) {
+          localIncomes.push(item.data);
+        }
       } else if (item.action === 'update') {
         const index = localIncomes.findIndex((i: Income) => i.id === (item.data as Income).id);
         if (index !== -1) {
@@ -560,7 +568,11 @@ class OfflineSyncManager {
       
       // Update local data based on sync item
       if (item.action === 'create') {
-        localBudgets.push(item.data);
+        // Check if budget already exists to prevent duplicates
+        const existingIndex = localBudgets.findIndex((b: Budget) => b.id === (item.data as Budget).id);
+        if (existingIndex === -1) {
+          localBudgets.push(item.data);
+        }
       } else if (item.action === 'update') {
         const index = localBudgets.findIndex((b: Budget) => b.id === (item.data as Budget).id);
         if (index !== -1) {

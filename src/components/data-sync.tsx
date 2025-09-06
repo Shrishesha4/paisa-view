@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/lib/auth-context";
@@ -19,9 +19,9 @@ import {
 } from "lucide-react";
 
 export function DataSync() {
-  const [syncing, setSyncing] = useState(false);
-  const [lastSync, setLastSync] = useState<Date | null>(null);
-  const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced" | "error">("idle");
+  const [syncing, setSyncing] = React.useState(false);
+  const [lastSync, setLastSync] = React.useState<Date | null>(null);
+  const [syncStatus, setSyncStatus] = React.useState<"idle" | "syncing" | "synced" | "error">("idle");
   
   const { user } = useAuth();
   const { toast } = useToast();
@@ -32,7 +32,7 @@ export function DataSync() {
   const [budgets] = useLocalStorage<Budget[]>("budgets", []);
   const [categories] = useLocalStorage<Category[]>("categories", []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (user) {
       loadSyncStatus();
     }
@@ -98,12 +98,43 @@ export function DataSync() {
       const cloudData = await FirestoreService.getUserData(user.uid);
       
       if (cloudData) {
-        // Update local storage with cloud data
-        // Note: In a real app, you'd want to merge this more intelligently
-        localStorage.setItem("expenses", JSON.stringify(cloudData.expenses));
-        localStorage.setItem("incomes", JSON.stringify(cloudData.incomes));
-        localStorage.setItem("budgets", JSON.stringify(cloudData.budgets));
-        localStorage.setItem("categories", JSON.stringify(cloudData.categories));
+        // Merge cloud data with local data to prevent data loss
+        const localExpenses = JSON.parse(localStorage.getItem("expenses") || "[]");
+        const localIncomes = JSON.parse(localStorage.getItem("incomes") || "[]");
+        const localBudgets = JSON.parse(localStorage.getItem("budgets") || "[]");
+        const localCategories = JSON.parse(localStorage.getItem("categories") || "[]");
+        
+        // Merge expenses - keep local ones that don't exist in cloud
+        const mergedExpenses = [...cloudData.expenses];
+        localExpenses.forEach((localExpense: any) => {
+          if (!cloudData.expenses.find((cloudExpense: any) => cloudExpense.id === localExpense.id)) {
+            mergedExpenses.push(localExpense);
+          }
+        });
+        
+        // Merge incomes - keep local ones that don't exist in cloud
+        const mergedIncomes = [...cloudData.incomes];
+        localIncomes.forEach((localIncome: any) => {
+          if (!cloudData.incomes.find((cloudIncome: any) => cloudIncome.id === localIncome.id)) {
+            mergedIncomes.push(localIncome);
+          }
+        });
+        
+        // Merge budgets - keep local ones that don't exist in cloud
+        const mergedBudgets = [...cloudData.budgets];
+        localBudgets.forEach((localBudget: any) => {
+          if (!cloudData.budgets.find((cloudBudget: any) => cloudBudget.id === localBudget.id)) {
+            mergedBudgets.push(localBudget);
+          }
+        });
+        
+        // Merge categories - combine unique categories
+        const mergedCategories = [...new Set([...cloudData.categories, ...localCategories])];
+        
+        localStorage.setItem("expenses", JSON.stringify(mergedExpenses));
+        localStorage.setItem("incomes", JSON.stringify(mergedIncomes));
+        localStorage.setItem("budgets", JSON.stringify(mergedBudgets));
+        localStorage.setItem("categories", JSON.stringify(mergedCategories));
         
         setLastSync(cloudData.lastSync);
         setSyncStatus("synced");
